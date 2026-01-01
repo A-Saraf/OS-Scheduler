@@ -161,10 +161,13 @@ const CPUScheduler: React.FC = () => {
         {/* Header */}
         <header className="text-center mb-6">
           <h1 className="text-3xl font-extrabold gradient-text mb-2">
-            CPU Scheduler Visualizer
+            OS-Scheduler
           </h1>
+          <h2 className="text-lg font-semibold text-foreground mb-2">
+            An Interactive CPU Scheduling Visualization and Performance Analysis Tool
+          </h2>
           <p className="text-muted-foreground">
-            Understand CPU Scheduling Algorithms Through Intuitive Visualization
+            Interactive CPU scheduling visualization and performance analysis tool with real-time animation
           </p>
         </header>
 
