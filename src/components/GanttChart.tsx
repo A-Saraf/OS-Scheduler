@@ -52,7 +52,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ timeline }) => {
   // Calculate minimum width per time unit to prevent overlapping
   const minWidthPerUnit = 50; // pixels per time unit - increased for better spacing
   const totalWidth = Math.max(maxTime * minWidthPerUnit, 800); // minimum 800px or calculated width
-  const widthPerUnit = totalWidth / maxTime;
+  const widthPerUnit = minWidthPerUnit; // Use fixed width per unit to prevent overflow
 
   return (
     <div className="space-y-3 w-full">
@@ -67,7 +67,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ timeline }) => {
       >
         <div style={{ width: `${totalWidth}px`, minWidth: '100%' }}>
           {/* Gantt bars - using absolute positioning for proper alignment */}
-          <div className="relative h-20 p-4 rounded-xl bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)]" style={{ width: `${totalWidth}px` }}>
+          <div className="relative h-20 m-4 rounded-xl bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)]" style={{ width: `${maxTime * widthPerUnit}px` }}>
             {timeline.map((item, index) => {
               const width = (item.end - item.start) * widthPerUnit;
               const left = item.start * widthPerUnit;
@@ -127,7 +127,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ timeline }) => {
           </div>
 
           {/* Time axis */}
-          <div className="relative h-8 px-4" style={{ width: `${totalWidth}px` }}>
+          <div className="relative h-8 mx-4" style={{ width: `${maxTime * widthPerUnit}px` }}>
             {Array.from({ length: maxTime + 1 }, (_, t) => (
               <div
                 key={t}

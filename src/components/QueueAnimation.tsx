@@ -81,11 +81,11 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
     setAllProcesses([...processes]);
     
     // Initialize animation state
-    const processesAtTime0 = processes.filter(p => p.arrival === 0);
+    const processesReadyAtStart = processes.filter(p => p.arrival <= 0);
     const initialState: AnimationState = {
       currentTime: 0,
       queue: algorithm === 'FCFS' || algorithm === 'SJF' || algorithm === 'RoundRobin' 
-        ? sortProcessesByAlgorithm(processesAtTime0)
+        ? sortProcessesByAlgorithm(processesReadyAtStart)
         : [],
       executing: null,
       completed: [],
@@ -150,7 +150,7 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
           });
         }
 
-        // Move processes from waiting to queue
+        // Move processes from waiting to queue - check all processes that should be ready
         const readyProcesses = newState.waiting.filter(
           p => p.arrival <= newState.currentTime &&
           !newState.queue.some(q => q.id === p.id) &&
@@ -162,6 +162,16 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
           const sorted = sortProcessesByAlgorithm(readyProcesses);
           newState.queue = [...newState.queue, ...sorted];
           newState.waiting = newState.waiting.filter(p => !readyProcesses.some(rp => rp.id === p.id));
+          
+          // Log processes that moved from waiting to ready queue
+          if (readyProcesses.length > 0) {
+            const processIds = readyProcesses.map(p => p.id).join(', ');
+            newLogEntries.push({
+              time: newState.currentTime,
+              message: `Process${readyProcesses.length > 1 ? 'es' : ''} ${processIds} moved from waiting to ready queue`,
+              type: 'queue'
+            });
+          }
         }
 
         // Enhanced timeline processing - handle multiple timeline items at same time
@@ -287,11 +297,11 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
     setIsPlaying(false);
     playSound('reset');
     
-    const processesAtTime0 = allProcesses.filter(p => p.arrival === 0);
+    const processesReadyAtStart = allProcesses.filter(p => p.arrival <= 0);
     const initialState: AnimationState = {
       currentTime: 0,
       queue: algorithm === 'FCFS' || algorithm === 'SJF' || algorithm === 'RoundRobin' 
-        ? sortProcessesByAlgorithm(processesAtTime0)
+        ? sortProcessesByAlgorithm(processesReadyAtStart)
         : [],
       executing: null,
       completed: [],
@@ -330,7 +340,19 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-foreground mb-4">Queue Animation</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-foreground">Queue Animation</h2>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-500/30">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-sm font-semibold text-foreground">
+            {algorithm === 'FCFS' ? 'First Come First Served' :
+             algorithm === 'SJF' ? 'Shortest Job First' :
+             algorithm === 'SRTF' ? 'Shortest Remaining Time First' :
+             algorithm === 'Priority' ? 'Priority Scheduling' :
+             algorithm === 'RoundRobin' ? `Round Robin (TQ: ${timeQuantum})` : algorithm}
+          </span>
+        </div>
+      </div>
       
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-black/20 rounded-lg">
