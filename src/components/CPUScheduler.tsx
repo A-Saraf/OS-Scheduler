@@ -11,6 +11,7 @@ import ProcessList from './ProcessList';
 import FileUpload from './FileUpload';
 import AlgorithmInfoModal from './AlgorithmInfoModal';
 import ComparisonModal from './ComparisonModal';
+import QueueAnimation from './QueueAnimation';
 import { Play, RotateCcw, BarChart3, Volume2, VolumeX, Info } from 'lucide-react';
 
 const CPUScheduler: React.FC = () => {
@@ -21,6 +22,7 @@ const CPUScheduler: React.FC = () => {
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [activeTab, setActiveTab] = useState<'manual' | 'upload'>('manual');
+  const [viewTab, setViewTab] = useState<'gantt' | 'animation'>('gantt');
 
   // Form state
   const [processId, setProcessId] = useState('');
@@ -321,21 +323,49 @@ const CPUScheduler: React.FC = () => {
 
           {/* Right Panel */}
           <main className="flex flex-col gap-5">
-            {/* Gantt Chart */}
+            {/* View Tabs */}
             <section className="glass-card">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Gantt Chart</h2>
-              <GanttChart timeline={timeline} />
+              <div className="flex gap-2 mb-4">
+                <button
+                  className={`tab-btn ${viewTab === 'gantt' ? 'active' : ''}`}
+                  onClick={() => setViewTab('gantt')}
+                >
+                  Gantt Chart
+                </button>
+                <button
+                  className={`tab-btn ${viewTab === 'animation' ? 'active' : ''}`}
+                  onClick={() => setViewTab('animation')}
+                >
+                  Queue Animation
+                </button>
+              </div>
+
+              {viewTab === 'gantt' ? (
+                <>
+                  {/* Gantt Chart */}
+                  <div className="mb-4">
+                    <h2 className="text-lg font-semibold text-foreground mb-4">Gantt Chart</h2>
+                    <GanttChart timeline={timeline} />
+                  </div>
+
+                  {/* Execution Details */}
+                  <ExecutionTable
+                    processes={processes}
+                    timeline={timeline}
+                    metrics={metrics}
+                  />
+
+                  {/* Metrics */}
+                  <MetricsPanel metrics={metrics} />
+                </>
+              ) : (
+                <QueueAnimation
+                  processes={processes}
+                  algorithm={algorithm}
+                  timeQuantum={timeQuantum}
+                />
+              )}
             </section>
-
-            {/* Execution Details */}
-            <ExecutionTable
-              processes={processes}
-              timeline={timeline}
-              metrics={metrics}
-            />
-
-            {/* Metrics */}
-            <MetricsPanel metrics={metrics} />
           </main>
         </div>
       </div>
