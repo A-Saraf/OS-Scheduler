@@ -1,17 +1,8 @@
 # OS-Scheduler: An Interactive CPU Scheduling Visualization and Performance Analysis Tool
 
-<div align="center">
-
-![OS Scheduler Logo](https://img.shields.io/badge/OS--Scheduler-Interactive%20Visualization-blue?style=for-the-badge)
-![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=for-the-badge&logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0.2-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.3.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+<div>
 
 **🚀 Live Application:** [https://os-scheduler-navy.vercel.app/](https://os-scheduler-navy.vercel.app/)
-
-[![View Demo](https://img.shields.io/badge/👀-View%20Demo-green?style=for-the-badge)](https://os-scheduler-navy.vercel.app/)
-[![GitHub Stars](https://img.shields.io/github/stars/A-Saraf/OS-Scheduler?style=for-the-badge&logo=github)](https://github.com/A-Saraf/OS-Scheduler)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 </div>
 
@@ -194,49 +185,9 @@ npm run preview
 - **Experimentation**: Try different scenarios and parameters
 - **Performance Analysis**: Understand trade-offs between algorithms
 
-## 🤝 Contributing
-
-We welcome contributions! Here's how you can help:
-
-1. **🍴 Fork the repository**
-2. **🌿 Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **💻 Make your changes**: Add features, fix bugs, improve docs
-4. **✅ Test thoroughly**: Ensure everything works as expected
-5. **📝 Commit changes**: `git commit -m 'Add amazing feature'`
-6. **📤 Push to branch**: `git push origin feature/amazing-feature`
-7. **🔄 Open a Pull Request**: Describe your changes and why they matter
-
-### **🐛 Bug Reports**
-- Use the [Issues](https://github.com/A-Saraf/OS-Scheduler/issues) page
-- Provide detailed steps to reproduce
-- Include screenshots if applicable
-- Specify browser and OS details
-
-### **💡 Feature Requests**
-- Open an issue with "Feature Request" label
-- Describe the use case and benefits
-- Consider implementation complexity
-- Discuss potential trade-offs
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Operating System Concepts** by Abraham Silberschatz et al.
-- **Modern Operating Systems** by Andrew S. Tanenbaum
-- The open-source community for amazing tools and libraries
-- All contributors and users who make this project better
-
----
-
 <div align="center">
 
 **🎓 Made with ❤️ for Students and Educators**
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/your-profile)
-[![Twitter](https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter)](https://twitter.com/your-handle)
 
 **⭐ If this project helped you learn, give it a star!**
 
