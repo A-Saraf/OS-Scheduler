@@ -2,7 +2,6 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { AlgorithmComparison } from '@/types/scheduler';
-import { X } from 'lucide-react';
 
 interface ComparisonModalProps {
   isOpen: boolean;
@@ -33,14 +32,8 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose, data
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-[hsl(222,47%,5%)] to-[hsl(217,33%,10%)] border-[rgba(255,255,255,0.1)]">
-        <DialogHeader className="relative">
-          <button
-            onClick={onClose}
-            className="modal-close"
-          >
-            <X size={18} />
-          </button>
-          <DialogTitle className="text-2xl font-bold gradient-text pr-10">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold gradient-text">
             Algorithm Comparison Analysis
           </DialogTitle>
           <div className="modal-divider mt-4" />

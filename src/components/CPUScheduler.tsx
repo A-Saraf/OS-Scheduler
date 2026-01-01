@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Process, AlgorithmType, TimelineItem, Metrics, AlgorithmComparison, algorithmNames, algorithmDescriptions } from '@/types/scheduler';
 import { runAlgorithm, calculateMetrics, runAllAlgorithms } from '@/utils/schedulerAlgorithms';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -23,6 +23,15 @@ const CPUScheduler: React.FC = () => {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [activeTab, setActiveTab] = useState<'manual' | 'upload'>('manual');
   const [viewTab, setViewTab] = useState<'gantt' | 'animation'>('gantt');
+  const [animationLog, setAnimationLog] = useState<Array<{ time: number; message: string; type: string }>>([]);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll log to bottom when new entries are added
+  useEffect(() => {
+    if (logContainerRef.current && viewTab === 'animation') {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [animationLog, viewTab]);
 
   // Form state
   const [processId, setProcessId] = useState('');
@@ -147,7 +156,7 @@ const CPUScheduler: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen p-5">
+    <div className="min-h-screen p-5 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <header className="text-center mb-6">
@@ -159,9 +168,15 @@ const CPUScheduler: React.FC = () => {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-5 items-start">
-          {/* Left Panel */}
-          <aside className="flex flex-col gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-5 items-start relative">
+          {/* Left Panel - Slides out in animation tab, replaced by operation log */}
+          <aside 
+            className={`flex flex-col gap-5 transition-all duration-500 ease-in-out ${
+              viewTab === 'animation' 
+                ? 'lg:absolute lg:left-[-400px] lg:opacity-0 lg:pointer-events-none lg:w-[350px]' 
+                : 'lg:relative lg:left-0 lg:opacity-100 lg:pointer-events-auto'
+            }`}
+          >
             {/* Algorithm Selection */}
             <section className="glass-card">
               <h2 className="text-lg font-semibold text-foreground mb-3">Algorithm</h2>
@@ -321,8 +336,47 @@ const CPUScheduler: React.FC = () => {
             </section>
           </aside>
 
+          {/* Operation Log - Slides in from left in animation tab */}
+          <aside
+            className={`flex flex-col gap-5 transition-all duration-500 ease-in-out ${
+              viewTab === 'animation'
+                ? 'lg:relative lg:left-0 lg:opacity-100 lg:pointer-events-auto'
+                : 'lg:absolute lg:left-[-400px] lg:opacity-0 lg:pointer-events-none lg:w-[350px]'
+            }`}
+          >
+            <div className="glass-card p-4 h-full max-h-[calc(100vh-200px)] overflow-y-auto" ref={logContainerRef}>
+              <h3 className="text-sm font-semibold text-foreground mb-3 sticky top-0 bg-black/50 backdrop-blur-sm pb-2 z-10">
+                Operation Log
+              </h3>
+              <div className="space-y-2">
+                {animationLog.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No operations yet</p>
+                ) : (
+                  animationLog.map((log, index) => (
+                    <div
+                      key={index}
+                      className={`text-xs p-2 rounded border-l-2 ${
+                        log.type === 'arrival' ? 'border-blue-500 bg-blue-500/10' :
+                        log.type === 'start' ? 'border-green-500 bg-green-500/10' :
+                        log.type === 'complete' ? 'border-purple-500 bg-purple-500/10' :
+                        log.type === 'reenter' ? 'border-yellow-500 bg-yellow-500/10' :
+                        log.type === 'idle' ? 'border-gray-500 bg-gray-500/10' :
+                        'border-muted bg-muted/10'
+                      }`}
+                    >
+                      <div className="font-semibold text-foreground">T={log.time}</div>
+                      <div className="text-muted-foreground mt-1">{log.message}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </aside>
+
           {/* Right Panel */}
-          <main className="flex flex-col gap-5">
+          <main className={`flex flex-col gap-5 transition-all duration-500 ease-in-out ${
+            viewTab === 'animation' ? 'lg:col-span-1' : ''
+          }`}>
             {/* View Tabs */}
             <section className="glass-card">
               <div className="flex gap-2 mb-4">
@@ -363,6 +417,7 @@ const CPUScheduler: React.FC = () => {
                   processes={processes}
                   algorithm={algorithm}
                   timeQuantum={timeQuantum}
+                  onLogUpdate={setAnimationLog}
                 />
               )}
             </section>

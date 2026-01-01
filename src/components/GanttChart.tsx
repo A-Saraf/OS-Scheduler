@@ -49,78 +49,99 @@ const GanttChart: React.FC<GanttChartProps> = ({ timeline }) => {
     { bg: 'linear-gradient(180deg, #22d3ee 0%, #06b6d4 50%, #0891b2 100%)', shadow: 'rgba(6, 182, 212, 0.5)', text: '#cffafe' },
   ];
 
+  // Calculate minimum width per time unit to prevent overlapping
+  const minWidthPerUnit = 50; // pixels per time unit - increased for better spacing
+  const totalWidth = Math.max(maxTime * minWidthPerUnit, 800); // minimum 800px or calculated width
+  const widthPerUnit = totalWidth / maxTime;
+
   return (
-    <div className="space-y-3">
-      {/* Gantt bars */}
-      <div className="flex gap-[2px] p-4 rounded-xl bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)]">
-        {timeline.map((item, index) => {
-          const width = ((item.end - item.start) / maxTime) * 100;
-          const isIdle = item.process === 'IDLE';
-          const colorIndex = isIdle ? -1 : processColorMap[item.process];
-          const config = isIdle ? null : colorConfigs[colorIndex];
+    <div className="space-y-3 w-full">
+      {/* Scrollable container - only scrolls when content exceeds container */}
+      <div 
+        className="overflow-x-auto overflow-y-visible" 
+        style={{ 
+          maxWidth: '100%',
+          width: '100%',
+          scrollbarWidth: 'thin'
+        }}
+      >
+        <div style={{ width: `${totalWidth}px`, minWidth: '100%' }}>
+          {/* Gantt bars - using absolute positioning for proper alignment */}
+          <div className="relative h-20 p-4 rounded-xl bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)]" style={{ width: `${totalWidth}px` }}>
+            {timeline.map((item, index) => {
+              const width = (item.end - item.start) * widthPerUnit;
+              const left = item.start * widthPerUnit;
+              const isIdle = item.process === 'IDLE';
+              const colorIndex = isIdle ? -1 : processColorMap[item.process];
+              const config = isIdle ? null : colorConfigs[colorIndex];
 
-          return (
-            <div
-              key={`${item.process}-${item.start}-${index}`}
-              className="gantt-bar-3d"
-              style={{
-                width: `${width}%`,
-                minWidth: '30px',
-                background: isIdle
-                  ? 'repeating-linear-gradient(45deg, rgba(100, 116, 139, 0.15), rgba(100, 116, 139, 0.15) 8px, rgba(71, 85, 105, 0.15) 8px, rgba(71, 85, 105, 0.15) 16px)'
-                  : config?.bg,
-                color: isIdle ? '#64748b' : config?.text,
-                boxShadow: isIdle
-                  ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.3)'
-                  : `inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 12px ${config?.shadow}`,
-                borderRadius: '6px',
-                padding: '12px 8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '13px',
-                textShadow: isIdle ? 'none' : '0 1px 2px rgba(0,0,0,0.3)',
-                border: isIdle ? '1px dashed rgba(100, 116, 139, 0.4)' : '1px solid rgba(255,255,255,0.2)',
-                transform: 'translateY(0)',
-                transition: 'all 0.2s ease',
-                animation: `growBar 0.5s ease forwards`,
-                animationDelay: `${index * 0.08}s`,
-                opacity: 0,
-              }}
-              onMouseEnter={(e) => {
-                if (!isIdle) {
-                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2), 0 8px 20px ${config?.shadow}`;
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                if (!isIdle && config) {
-                  e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 12px ${config.shadow}`;
-                }
-              }}
-            >
-              {item.process}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Time axis */}
-      <div className="relative h-8 mx-4">
-        {Array.from({ length: maxTime + 1 }, (_, t) => (
-          <div
-            key={t}
-            className="absolute text-xs text-muted-foreground font-semibold"
-            style={{
-              left: `${(t / maxTime) * 100}%`,
-              transform: 'translateX(-50%)',
-            }}
-          >
-            {t}
+              return (
+                <div
+                  key={`${item.process}-${item.start}-${index}`}
+                  className="gantt-bar-3d absolute"
+                  style={{
+                    left: `${left}px`,
+                    width: `${width}px`,
+                    minWidth: '30px',
+                    height: '48px',
+                    top: '16px',
+                    background: isIdle
+                      ? 'repeating-linear-gradient(45deg, rgba(100, 116, 139, 0.15), rgba(100, 116, 139, 0.15) 8px, rgba(71, 85, 105, 0.15) 8px, rgba(71, 85, 105, 0.15) 16px)'
+                      : config?.bg,
+                    color: isIdle ? '#64748b' : config?.text,
+                    boxShadow: isIdle
+                      ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.3)'
+                      : `inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 12px ${config?.shadow}`,
+                    borderRadius: '6px',
+                    padding: '12px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    textShadow: isIdle ? 'none' : '0 1px 2px rgba(0,0,0,0.3)',
+                    border: isIdle ? '1px dashed rgba(100, 116, 139, 0.4)' : '1px solid rgba(255,255,255,0.2)',
+                    transform: 'translateY(0)',
+                    transition: 'all 0.2s ease',
+                    animation: `growBar 0.5s ease forwards`,
+                    animationDelay: `${index * 0.08}s`,
+                    opacity: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isIdle) {
+                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                      e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2), 0 8px 20px ${config?.shadow}`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    if (!isIdle && config) {
+                      e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 12px ${config.shadow}`;
+                    }
+                  }}
+                >
+                  {item.process}
+                </div>
+              );
+            })}
           </div>
-        ))}
+
+          {/* Time axis */}
+          <div className="relative h-8 px-4" style={{ width: `${totalWidth}px` }}>
+            {Array.from({ length: maxTime + 1 }, (_, t) => (
+              <div
+                key={t}
+                className="absolute text-xs text-muted-foreground font-semibold"
+                style={{
+                  left: `${t * widthPerUnit}px`,
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                {t}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

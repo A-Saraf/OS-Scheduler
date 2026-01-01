@@ -9,6 +9,7 @@ interface QueueAnimationProps {
   processes: Process[];
   algorithm: AlgorithmType;
   timeQuantum: number;
+  onLogUpdate?: (log: OperationLog[]) => void;
 }
 
 interface AnimationState {
@@ -20,14 +21,51 @@ interface AnimationState {
   timelineIndex: number;
 }
 
-const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, timeQuantum }) => {
+export interface OperationLog {
+  time: number;
+  message: string;
+  type: 'arrival' | 'queue' | 'start' | 'complete' | 'idle' | 'reenter';
+}
+
+const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, timeQuantum, onLogUpdate }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1); // 1x, 2x, 3x, etc.
   const [animationState, setAnimationState] = useState<AnimationState | null>(null);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [allProcesses, setAllProcesses] = useState<Process[]>([]);
+  const [operationLog, setOperationLog] = useState<OperationLog[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { playSound } = useSoundEffects();
+  const logContainerRef = useRef<HTMLDivElement>(null);
+
+  // Memoized process sorting function
+  const sortProcessesByAlgorithm = useCallback((processes: Process[]) => {
+    const sorted = [...processes];
+    switch (algorithm) {
+      case 'FCFS':
+        return sorted.sort((a, b) => a.arrival - b.arrival);
+      case 'SJF':
+        return sorted.sort((a, b) => a.burst - b.burst);
+      case 'Priority':
+        return sorted.sort((a, b) => a.priority - b.priority);
+      default:
+        return sorted;
+    }
+  }, [algorithm]);
+
+  // Auto-scroll log to bottom when new entries are added
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [operationLog]);
+
+  // Notify parent of log updates
+  useEffect(() => {
+    if (onLogUpdate) {
+      onLogUpdate(operationLog);
+    }
+  }, [operationLog, onLogUpdate]);
 
   // Generate timeline and prepare processes
   useEffect(() => {
@@ -47,11 +85,7 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
     const initialState: AnimationState = {
       currentTime: 0,
       queue: algorithm === 'FCFS' || algorithm === 'SJF' || algorithm === 'RoundRobin' 
-        ? [...processesAtTime0].sort((a, b) => {
-            if (algorithm === 'FCFS') return a.arrival - b.arrival;
-            if (algorithm === 'SJF') return a.burst - b.burst;
-            return 0;
-          })
+        ? sortProcessesByAlgorithm(processesAtTime0)
         : [],
       executing: null,
       completed: [],
@@ -59,9 +93,13 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
       timelineIndex: 0,
     };
     setAnimationState(initialState);
-  }, [processes, algorithm, timeQuantum]);
+    setOperationLog([{ time: 0, message: 'Animation initialized', type: 'start' }]);
+    if (onLogUpdate) {
+      onLogUpdate([{ time: 0, message: 'Animation initialized', type: 'start' }]);
+    }
+  }, [processes, algorithm, timeQuantum, onLogUpdate, sortProcessesByAlgorithm]);
 
-  // Animation logic
+  // Optimized animation logic
   useEffect(() => {
     if (!isPlaying || !animationState || timeline.length === 0) {
       if (intervalRef.current) {
@@ -87,7 +125,10 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
           return prev;
         }
 
-        // Add processes that arrive at current time to waiting
+        // Batch log updates to reduce re-renders
+        const newLogEntries: OperationLog[] = [];
+
+        // Add processes that arrive at current time
         const arrivingProcesses = allProcesses.filter(
           p => p.arrival === newState.currentTime && 
           !newState.waiting.some(w => w.id === p.id) && 
@@ -98,10 +139,18 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
 
         if (arrivingProcesses.length > 0) {
           playSound('addProcess');
-          newState.waiting = [...newState.waiting, ...arrivingProcesses];
+          const sorted = sortProcessesByAlgorithm(arrivingProcesses);
+          newState.queue = [...newState.queue, ...sorted];
+          
+          const processIds = sorted.map(p => p.id).join(', ');
+          newLogEntries.push({
+            time: newState.currentTime,
+            message: `Process${sorted.length > 1 ? 'es' : ''} ${processIds} arrived and entered ready queue`,
+            type: 'arrival'
+          });
         }
 
-        // Move processes from waiting to queue if they've arrived
+        // Move processes from waiting to queue
         const readyProcesses = newState.waiting.filter(
           p => p.arrival <= newState.currentTime &&
           !newState.queue.some(q => q.id === p.id) &&
@@ -110,27 +159,22 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
         );
 
         if (readyProcesses.length > 0) {
-          // Sort based on algorithm for queue ordering
-          let sorted = [...readyProcesses];
-          if (algorithm === 'FCFS') {
-            sorted.sort((a, b) => a.arrival - b.arrival);
-          } else if (algorithm === 'SJF') {
-            sorted.sort((a, b) => a.burst - b.burst);
-          } else if (algorithm === 'Priority') {
-            sorted.sort((a, b) => a.priority - b.priority);
-          }
-          
+          const sorted = sortProcessesByAlgorithm(readyProcesses);
           newState.queue = [...newState.queue, ...sorted];
           newState.waiting = newState.waiting.filter(p => !readyProcesses.some(rp => rp.id === p.id));
         }
 
-        // Check timeline for execution changes
-        // First, advance timeline index if we've passed the end of current item
+        // Enhanced timeline processing - handle multiple timeline items at same time
         while (newState.timelineIndex < timeline.length) {
           const currentItem = timeline[newState.timelineIndex];
           if (!currentItem) break;
           
           const { process: processId, start, end } = currentItem;
+          
+          // If we're before this timeline item, stop
+          if (newState.currentTime < start) {
+            break;
+          }
           
           // If we've passed this timeline item, move to next
           if (newState.currentTime > end) {
@@ -138,36 +182,41 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
             continue;
           }
           
-          // If we're before this timeline item, stop
-          if (newState.currentTime < start) {
-            break;
-          }
-          
           // Process completes time slice (check at end time first)
           if (newState.currentTime === end) {
             if (newState.executing && processId !== 'IDLE' && newState.executing.id === processId) {
               const process = newState.executing;
-              
-              // Check if process is fully completed by checking if it appears again in timeline
               const remainingItems = timeline.slice(newState.timelineIndex + 1);
               const willExecuteAgain = remainingItems.some(item => item.process === processId);
               
               if (!willExecuteAgain) {
-                // Process is fully completed
                 newState.completed = [...newState.completed, process];
                 playSound('success');
-              } else {
-                // Process will execute again (Round Robin or preemption) - add back to queue
-                if (algorithm === 'RoundRobin' || algorithm === 'SRTF' || algorithm === 'Priority') {
-                  newState.queue = [...newState.queue, process];
-                  playSound('addProcess');
-                }
+                newLogEntries.push({
+                  time: newState.currentTime,
+                  message: `Process ${processId} completed execution`,
+                  type: 'complete'
+                });
+              } else if (algorithm === 'RoundRobin' || algorithm === 'SRTF' || algorithm === 'Priority') {
+                newState.queue = [...newState.queue, process];
+                playSound('addProcess');
+                newLogEntries.push({
+                  time: newState.currentTime,
+                  message: `Process ${processId} time slice ended, re-entered ready queue`,
+                  type: 'reenter'
+                });
               }
             }
             newState.executing = null;
-            // Move to next timeline item and continue to check if next starts immediately
             newState.timelineIndex++;
-            continue; // Continue loop to check next timeline item
+            
+            // Check if next item starts at same time
+            const nextItem = timeline[newState.timelineIndex];
+            if (nextItem && nextItem.start === newState.currentTime) {
+              continue; // Continue to process next item immediately
+            } else {
+              break; // No more items at this time, exit loop
+            }
           }
           
           // Process starts executing
@@ -175,16 +224,28 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
             if (processId !== 'IDLE') {
               const process = allProcesses.find(p => p.id === processId);
               if (process) {
-                // Remove from queue/waiting (but not from completed if it's re-entering)
                 newState.queue = newState.queue.filter(p => p.id !== processId);
                 newState.waiting = newState.waiting.filter(p => p.id !== processId);
-                // Remove from completed if it's re-entering (for Round Robin)
+                const wasCompleted = newState.completed.some(p => p.id === processId);
                 newState.completed = newState.completed.filter(p => p.id !== processId);
                 newState.executing = process;
                 playSound('runGantt');
+                
+                newLogEntries.push({
+                  time: newState.currentTime,
+                  message: wasCompleted 
+                    ? `Process ${processId} re-entered queue and started executing (Round Robin)`
+                    : `Process ${processId} started executing on CPU`,
+                  type: wasCompleted ? 'reenter' : 'start'
+                });
               }
             } else {
               newState.executing = null;
+              newLogEntries.push({
+                time: newState.currentTime,
+                message: 'CPU is IDLE',
+                type: 'idle'
+              });
             }
             break; // Processed start, wait for next tick
           }
@@ -194,6 +255,11 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
         }
 
         newState.currentTime += 1;
+
+        // Batch update logs
+        if (newLogEntries.length > 0) {
+          setOperationLog(prev => [...prev, ...newLogEntries]);
+        }
 
         return newState;
       });
@@ -205,7 +271,7 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
         intervalRef.current = null;
       }
     };
-  }, [isPlaying, animationState, timeline, speed, algorithm, allProcesses, playSound]);
+  }, [isPlaying, animationState, timeline, speed, algorithm, allProcesses, playSound, sortProcessesByAlgorithm]);
 
   const handlePlay = useCallback(() => {
     if (!animationState || timeline.length === 0) return;
@@ -225,11 +291,7 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
     const initialState: AnimationState = {
       currentTime: 0,
       queue: algorithm === 'FCFS' || algorithm === 'SJF' || algorithm === 'RoundRobin' 
-        ? [...processesAtTime0].sort((a, b) => {
-            if (algorithm === 'FCFS') return a.arrival - b.arrival;
-            if (algorithm === 'SJF') return a.burst - b.burst;
-            return 0;
-          })
+        ? sortProcessesByAlgorithm(processesAtTime0)
         : [],
       executing: null,
       completed: [],
@@ -237,7 +299,8 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
       timelineIndex: 0,
     };
     setAnimationState(initialState);
-  }, [allProcesses, algorithm, playSound]);
+    setOperationLog([{ time: 0, message: 'Animation reset', type: 'start' }]);
+  }, [allProcesses, algorithm, playSound, sortProcessesByAlgorithm]);
 
   const getProcessColor = (processId: string): string => {
     const colors = [
@@ -266,7 +329,7 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
   }
 
   return (
-    <div className="glass-card p-6">
+    <div>
       <h2 className="text-lg font-semibold text-foreground mb-4">Queue Animation</h2>
       
       {/* Controls */}

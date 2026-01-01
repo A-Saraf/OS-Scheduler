@@ -1,6 +1,5 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
 
 interface AlgorithmInfoModalProps {
   isOpen: boolean;
@@ -18,14 +17,8 @@ const AlgorithmInfoModal: React.FC<AlgorithmInfoModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[650px] bg-gradient-to-br from-[hsl(222,47%,5%)] to-[hsl(217,33%,10%)] border-[rgba(255,255,255,0.1)]">
-        <DialogHeader className="relative">
-          <button
-            onClick={onClose}
-            className="modal-close"
-          >
-            <X size={18} />
-          </button>
-          <DialogTitle className="text-2xl font-bold gradient-text pr-10">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold gradient-text">
             {title}
           </DialogTitle>
           <div className="modal-divider mt-4" />
