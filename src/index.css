@@ -278,11 +278,22 @@
   }
 
   /* Gantt chart bar */
-  .gantt-bar {
-    @apply flex items-center justify-center font-bold text-sm;
-    padding: 10px 6px;
-    animation: growBar 0.6s ease forwards;
-    opacity: 0;
+  /* 3D Gantt Bar Styles */
+  .gantt-bar-3d {
+    @apply flex items-center justify-center font-bold text-sm cursor-pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gantt-bar-3d::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%);
+    pointer-events: none;
   }
 
   @keyframes growBar {
@@ -294,27 +305,6 @@
       transform: scaleX(1);
       opacity: 1;
     }
-  }
-
-  .gantt-bar-0 { background: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 40%)); color: #e0e7ff; }
-  .gantt-bar-1 { background: linear-gradient(135deg, hsl(263 70% 58%), hsl(263 70% 45%)); color: #ede9fe; }
-  .gantt-bar-2 { background: linear-gradient(135deg, hsl(330 81% 60%), hsl(330 81% 45%)); color: #fce7f3; }
-  .gantt-bar-3 { background: linear-gradient(135deg, hsl(38 92% 60%), hsl(38 92% 50%)); color: #1e293b; }
-  .gantt-bar-4 { background: linear-gradient(135deg, hsl(158 64% 52%), hsl(158 64% 40%)); color: #d1fae5; }
-  .gantt-bar-5 { background: linear-gradient(135deg, hsl(187 96% 52%), hsl(199 89% 48%)); color: #cffafe; }
-
-  .gantt-bar-idle {
-    background: repeating-linear-gradient(
-      45deg,
-      rgba(100, 116, 139, 0.1),
-      rgba(100, 116, 139, 0.1) 10px,
-      rgba(71, 85, 105, 0.1) 10px,
-      rgba(71, 85, 105, 0.1) 20px
-    );
-    color: #64748b;
-    border: 1px dashed rgba(100, 116, 139, 0.3);
-    font-size: 11px;
-    font-style: italic;
   }
 
   /* Metric glass card */
