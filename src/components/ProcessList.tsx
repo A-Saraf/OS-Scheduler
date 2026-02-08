@@ -1,5 +1,6 @@
 import React from 'react';
 import { Process, AlgorithmType } from '@/types/scheduler';
+import { PROCESS_COLORS } from '@/utils/processColors';
 import { X } from 'lucide-react';
 
 interface ProcessListProps {
@@ -8,6 +9,11 @@ interface ProcessListProps {
   onDelete: (id: string) => void;
   onClearAll: () => void;
 }
+
+// Helper to get process color by index
+const getProcessColorSolid = (index: number): string => {
+  return PROCESS_COLORS[index % PROCESS_COLORS.length].solid;
+};
 
 const ProcessList: React.FC<ProcessListProps> = ({ processes, algorithm, onDelete, onClearAll }) => {
   const showPriority = algorithm === 'Priority';
@@ -24,16 +30,23 @@ const ProcessList: React.FC<ProcessListProps> = ({ processes, algorithm, onDelet
   return (
     <div className="glass-card">
       <h2 className="text-lg font-semibold text-foreground mb-4">Processes List</h2>
-      
-      <div className="flex flex-col gap-2 max-h-[210px] overflow-y-auto">
-        {processes.map((p) => (
+
+      <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+        {processes.map((p, index) => (
           <div key={p.id} className="process-item">
-            <div>
-              <p className="font-bold text-[15px] text-foreground">{p.id}</p>
-              <p className="text-muted-foreground text-xs">
-                AT:{p.arrival} • BT:{p.burst}
-                {showPriority && ` • P:${p.priority}`}
-              </p>
+            <div className="flex items-center gap-3">
+              {/* Color indicator */}
+              <div
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: getProcessColorSolid(index) }}
+              />
+              <div>
+                <p className="font-bold text-[15px] text-foreground">{p.id}</p>
+                <p className="text-muted-foreground text-xs">
+                  AT:{p.arrival} • BT:{p.burst}
+                  {showPriority && ` • P:${p.priority}`}
+                </p>
+              </div>
             </div>
             <button
               onClick={() => onDelete(p.id)}

@@ -130,11 +130,19 @@ export const roundRobin = (processes: Process[], timeQuantum: number): TimelineI
   const procs = processes.map(p => ({ ...p, remaining: p.burst }));
   let time = 0;
 
-  while (queue.length > 0 || procs.some(p => p.remaining > 0)) {
-    procs.filter(p => p.arrival === time).forEach(p => queue.push(p));
+  // Add initial processes that arrive at time 0
+  procs.filter(p => p.arrival <= 0).forEach(p => queue.push(p));
 
+  while (queue.length > 0 || procs.some(p => p.remaining > 0)) {
     if (queue.length === 0) {
-      time++;
+      // Find next arrival time
+      const nextArrival = Math.min(...procs.filter(p => p.remaining > 0 && p.arrival > time).map(p => p.arrival));
+      if (nextArrival > time && nextArrival !== Infinity) {
+        result.push({ process: 'IDLE', start: time, end: nextArrival, arrival: 0 });
+        time = nextArrival;
+        // Add processes that arrive at this new time
+        procs.filter(p => p.arrival === time).forEach(p => queue.push(p));
+      }
       continue;
     }
 
@@ -145,10 +153,19 @@ export const roundRobin = (processes: Process[], timeQuantum: number): TimelineI
     time += exec;
     p.remaining -= exec;
 
+    // Add newly arrived processes during execution
     procs.filter(px => px.arrival <= time && px.remaining > 0 && !queue.includes(px))
          .forEach(px => queue.push(px));
 
-    if (p.remaining > 0) queue.push(p);
+    // Re-queue process if not finished
+    if (p.remaining > 0) {
+      queue.push(p);
+    }
+  }
+
+  // Remove any trailing IDLE blocks
+  while (result.length > 0 && result[result.length - 1].process === 'IDLE') {
+    result.pop();
   }
 
   return result;

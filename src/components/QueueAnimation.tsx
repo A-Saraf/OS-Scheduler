@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Process, AlgorithmType, TimelineItem } from '@/types/scheduler';
 import { runAlgorithm } from '@/utils/schedulerAlgorithms';
+import { PROCESS_COLORS } from '@/utils/processColors';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { Play, Pause, RotateCcw, Gauge } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -19,6 +20,7 @@ interface AnimationState {
   completed: Process[];
   waiting: Process[];
   timelineIndex: number;
+  remainingBurst: Record<string, number>;
 }
 
 export interface OperationLog {
@@ -79,18 +81,23 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
     const timelineResult = runAlgorithm(algorithm, processes, timeQuantum);
     setTimeline(timelineResult);
     setAllProcesses([...processes]);
-    
+
     // Initialize animation state
     const processesReadyAtStart = processes.filter(p => p.arrival <= 0);
+    const initialRemainingBurst = processes.reduce((acc, p) => {
+      acc[p.id] = p.burst;
+      return acc;
+    }, {} as Record<string, number>);
     const initialState: AnimationState = {
       currentTime: 0,
-      queue: algorithm === 'FCFS' || algorithm === 'SJF' || algorithm === 'RoundRobin' 
+      queue: algorithm === 'FCFS' || algorithm === 'SJF' || algorithm === 'RoundRobin'
         ? sortProcessesByAlgorithm(processesReadyAtStart)
         : [],
       executing: null,
       completed: [],
       waiting: processes.filter(p => p.arrival > 0),
       timelineIndex: 0,
+      remainingBurst: initialRemainingBurst,
     };
     setAnimationState(initialState);
     setOperationLog([{ time: 0, message: 'Animation initialized', type: 'start' }]);
@@ -130,18 +137,18 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
 
         // Add processes that arrive at current time
         const arrivingProcesses = allProcesses.filter(
-          p => p.arrival === newState.currentTime && 
-          !newState.waiting.some(w => w.id === p.id) && 
-          !newState.queue.some(q => q.id === p.id) && 
-          !newState.completed.some(c => c.id === p.id) &&
-          newState.executing?.id !== p.id
+          p => p.arrival === newState.currentTime &&
+            !newState.waiting.some(w => w.id === p.id) &&
+            !newState.queue.some(q => q.id === p.id) &&
+            !newState.completed.some(c => c.id === p.id) &&
+            newState.executing?.id !== p.id
         );
 
         if (arrivingProcesses.length > 0) {
           playSound('addProcess');
           const sorted = sortProcessesByAlgorithm(arrivingProcesses);
           newState.queue = [...newState.queue, ...sorted];
-          
+
           const processIds = sorted.map(p => p.id).join(', ');
           newLogEntries.push({
             time: newState.currentTime,
@@ -153,16 +160,16 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
         // Move processes from waiting to queue - check all processes that should be ready
         const readyProcesses = newState.waiting.filter(
           p => p.arrival <= newState.currentTime &&
-          !newState.queue.some(q => q.id === p.id) &&
-          !newState.completed.some(c => c.id === p.id) &&
-          newState.executing?.id !== p.id
+            !newState.queue.some(q => q.id === p.id) &&
+            !newState.completed.some(c => c.id === p.id) &&
+            newState.executing?.id !== p.id
         );
 
         if (readyProcesses.length > 0) {
           const sorted = sortProcessesByAlgorithm(readyProcesses);
           newState.queue = [...newState.queue, ...sorted];
           newState.waiting = newState.waiting.filter(p => !readyProcesses.some(rp => rp.id === p.id));
-          
+
           // Log processes that moved from waiting to ready queue
           if (readyProcesses.length > 0) {
             const processIds = readyProcesses.map(p => p.id).join(', ');
@@ -178,28 +185,38 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
         while (newState.timelineIndex < timeline.length) {
           const currentItem = timeline[newState.timelineIndex];
           if (!currentItem) break;
-          
+
           const { process: processId, start, end } = currentItem;
-          
+
           // If we're before this timeline item, stop
           if (newState.currentTime < start) {
             break;
           }
-          
+
           // If we've passed this timeline item, move to next
           if (newState.currentTime > end) {
             newState.timelineIndex++;
             continue;
           }
-          
+
           // Process completes time slice (check at end time first)
           if (newState.currentTime === end) {
             if (newState.executing && processId !== 'IDLE' && newState.executing.id === processId) {
               const process = newState.executing;
-              const remainingItems = timeline.slice(newState.timelineIndex + 1);
-              const willExecuteAgain = remainingItems.some(item => item.process === processId);
-              
-              if (!willExecuteAgain) {
+              const executionTime = end - start;
+
+              // Update remaining burst time
+              const currentRemaining = newState.remainingBurst[processId] ?? process.burst;
+              const newRemaining = Math.max(0, currentRemaining - executionTime);
+              newState.remainingBurst = {
+                ...newState.remainingBurst,
+                [processId]: newRemaining
+              };
+
+              // Check if process is complete based on remaining burst
+              if (newRemaining <= 0) {
+                // Remove from queue if somehow present
+                newState.queue = newState.queue.filter(q => q.id !== processId);
                 newState.completed = [...newState.completed, process];
                 playSound('success');
                 newLogEntries.push({
@@ -208,18 +225,21 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
                   type: 'complete'
                 });
               } else if (algorithm === 'RoundRobin' || algorithm === 'SRTF' || algorithm === 'Priority') {
-                newState.queue = [...newState.queue, process];
-                playSound('addProcess');
-                newLogEntries.push({
-                  time: newState.currentTime,
-                  message: `Process ${processId} time slice ended, re-entered ready queue`,
-                  type: 'reenter'
-                });
+                // Only add to queue if not already there
+                if (!newState.queue.some(q => q.id === processId)) {
+                  newState.queue = [...newState.queue, process];
+                  playSound('addProcess');
+                  newLogEntries.push({
+                    time: newState.currentTime,
+                    message: `Process ${processId} time slice ended (${newRemaining} remaining), re-entered ready queue`,
+                    type: 'reenter'
+                  });
+                }
               }
             }
             newState.executing = null;
             newState.timelineIndex++;
-            
+
             // Check if next item starts at same time
             const nextItem = timeline[newState.timelineIndex];
             if (nextItem && nextItem.start === newState.currentTime) {
@@ -228,7 +248,7 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
               break; // No more items at this time, exit loop
             }
           }
-          
+
           // Process starts executing
           if (newState.currentTime === start) {
             if (processId !== 'IDLE') {
@@ -240,10 +260,10 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
                 newState.completed = newState.completed.filter(p => p.id !== processId);
                 newState.executing = process;
                 playSound('runGantt');
-                
+
                 newLogEntries.push({
                   time: newState.currentTime,
-                  message: wasCompleted 
+                  message: wasCompleted
                     ? `Process ${processId} re-entered queue and started executing (Round Robin)`
                     : `Process ${processId} started executing on CPU`,
                   type: wasCompleted ? 'reenter' : 'start'
@@ -259,7 +279,7 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
             }
             break; // Processed start, wait for next tick
           }
-          
+
           // We're in the middle of execution, break
           break;
         }
@@ -296,30 +316,39 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
   const handleRestart = useCallback(() => {
     setIsPlaying(false);
     playSound('reset');
-    
+
     const processesReadyAtStart = allProcesses.filter(p => p.arrival <= 0);
+    const initialRemainingBurst = allProcesses.reduce((acc, p) => {
+      acc[p.id] = p.burst;
+      return acc;
+    }, {} as Record<string, number>);
     const initialState: AnimationState = {
       currentTime: 0,
-      queue: algorithm === 'FCFS' || algorithm === 'SJF' || algorithm === 'RoundRobin' 
+      queue: algorithm === 'FCFS' || algorithm === 'SJF' || algorithm === 'RoundRobin'
         ? sortProcessesByAlgorithm(processesReadyAtStart)
         : [],
       executing: null,
       completed: [],
       waiting: allProcesses.filter(p => p.arrival > 0),
       timelineIndex: 0,
+      remainingBurst: initialRemainingBurst,
     };
     setAnimationState(initialState);
     setOperationLog([{ time: 0, message: 'Animation reset', type: 'start' }]);
   }, [allProcesses, algorithm, playSound, sortProcessesByAlgorithm]);
 
-  const getProcessColor = (processId: string): string => {
-    const colors = [
-      'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 
-      'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-cyan-500',
-      'bg-orange-500', 'bg-teal-500'
-    ];
-    const index = allProcesses.findIndex(p => p.id === processId);
-    return colors[index % colors.length] || 'bg-gray-500';
+  // Use useMemo for consistent process colors based on order
+  const processColorMap = useMemo(() => {
+    const map: Record<string, typeof PROCESS_COLORS[0]> = {};
+    allProcesses.forEach((process, index) => {
+      map[process.id] = PROCESS_COLORS[index % PROCESS_COLORS.length];
+    });
+    return map;
+  }, [allProcesses]);
+
+  const getProcessColor = (processId: string): { bgClass: string; solid: string } => {
+    const color = processColorMap[processId];
+    return color || PROCESS_COLORS[0];
   };
 
   if (processes.length === 0) {
@@ -339,28 +368,28 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
   }
 
   return (
-    <div>
+    <div className="overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-foreground">Queue Animation</h2>
         <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-500/30">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
           <span className="text-sm font-semibold text-foreground">
             {algorithm === 'FCFS' ? 'First Come First Served' :
-             algorithm === 'SJF' ? 'Shortest Job First' :
-             algorithm === 'SRTF' ? 'Shortest Remaining Time First' :
-             algorithm === 'Priority' ? 'Priority Scheduling' :
-             algorithm === 'RoundRobin' ? `Round Robin (TQ: ${timeQuantum})` : algorithm}
+              algorithm === 'SJF' ? 'Shortest Job First' :
+                algorithm === 'SRTF' ? 'Shortest Remaining Time First' :
+                  algorithm === 'Priority' ? 'Priority Scheduling' :
+                    algorithm === 'RoundRobin' ? `Round Robin (TQ: ${timeQuantum})` : algorithm}
           </span>
         </div>
       </div>
-      
+
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-black/20 rounded-lg">
         <div className="flex items-center gap-2">
           <button
             onClick={isPlaying ? handlePause : handlePlay}
             disabled={timeline.length === 0}
-            className="btn-gradient flex items-center gap-2"
+            className="btn-execute"
           >
             {isPlaying ? <Pause size={16} /> : <Play size={16} />}
             {isPlaying ? 'Pause' : 'Play'}
@@ -368,7 +397,7 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
           <button
             onClick={handleRestart}
             disabled={timeline.length === 0}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary"
           >
             <RotateCcw size={16} />
             Restart
@@ -404,15 +433,19 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
             {animationState.waiting.length === 0 ? (
               <span className="text-muted-foreground text-sm">No processes waiting</span>
             ) : (
-              animationState.waiting.map((process) => (
-                <div
-                  key={process.id}
-                  className={`${getProcessColor(process.id)} text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg transition-all duration-300 animate-pulse`}
-                >
-                  <div>{process.id}</div>
-                  <div className="text-xs opacity-80">AT: {process.arrival}</div>
-                </div>
-              ))
+              animationState.waiting.map((process) => {
+                const processColor = getProcessColor(process.id);
+                return (
+                  <div
+                    key={process.id}
+                    className="process-card text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg transition-all duration-300"
+                    style={{ backgroundColor: processColor.solid }}
+                  >
+                    <div>{process.id}</div>
+                    <div className="text-xs opacity-80">AT: {process.arrival}</div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -422,27 +455,28 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
           <h3 className="text-sm font-semibold text-muted-foreground mb-2 text-center">
             Ready Queue
           </h3>
-          <div className="flex items-center justify-center gap-2 min-h-[80px] p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border-2 border-blue-500/30">
+          <div className="flex items-center justify-center gap-2 min-h-[80px] p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border-2 border-blue-500/30 queue-section">
             {animationState.queue.length === 0 ? (
               <span className="text-muted-foreground text-sm">Queue is empty</span>
             ) : (
               <>
                 <div className="text-xs text-muted-foreground font-semibold">Front →</div>
-                {animationState.queue.map((process, index) => (
-                  <div
-                    key={process.id}
-                    className={`${getProcessColor(process.id)} text-white px-4 py-3 rounded-lg font-semibold text-sm shadow-lg transition-all duration-500 transform hover:scale-105`}
-                    style={{
-                      animation: index === 0 ? 'pulse 1s infinite' : 'none',
-                    }}
-                  >
-                    <div className="font-bold">{process.id}</div>
-                    <div className="text-xs opacity-80">BT: {process.burst}</div>
-                    {algorithm === 'Priority' && (
-                      <div className="text-xs opacity-80">P: {process.priority}</div>
-                    )}
-                  </div>
-                ))}
+                {animationState.queue.map((process) => {
+                  const processColor = getProcessColor(process.id);
+                  return (
+                    <div
+                      key={process.id}
+                      className="process-card text-white px-4 py-3 rounded-lg font-semibold text-sm shadow-lg transition-all duration-500 transform hover:scale-105"
+                      style={{ backgroundColor: processColor.solid }}
+                    >
+                      <div className="font-bold">{process.id}</div>
+                      <div className="text-xs opacity-80">BT: {animationState.remainingBurst?.[process.id] ?? process.burst}/{process.burst}</div>
+                      {algorithm === 'Priority' && (
+                        <div className="text-xs opacity-80">P: {process.priority}</div>
+                      )}
+                    </div>
+                  );
+                })}
                 <div className="text-xs text-muted-foreground font-semibold">← Back</div>
               </>
             )}
@@ -454,17 +488,23 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
           <h3 className="text-sm font-semibold text-muted-foreground mb-2 text-center">
             CPU (Currently Executing)
           </h3>
-          <div className="flex justify-center items-center min-h-[100px] p-4 bg-gradient-to-br from-yellow-500/30 to-orange-500/30 rounded-lg border-2 border-yellow-500/40">
+          <div className={`flex justify-center items-center min-h-[100px] p-4 bg-gradient-to-br from-yellow-500/30 to-orange-500/30 rounded-lg border-2 border-yellow-500/40 ${animationState.executing ? 'cpu-executing' : ''}`}>
             {animationState.executing ? (
-              <div
-                className={`${getProcessColor(animationState.executing.id)} text-white px-6 py-4 rounded-xl font-bold text-lg shadow-2xl transform transition-all duration-300 animate-pulse`}
-              >
-                <div className="text-2xl mb-1">{animationState.executing.id}</div>
-                <div className="text-sm opacity-90">Burst: {animationState.executing.burst}</div>
-                {algorithm === 'Priority' && (
-                  <div className="text-sm opacity-90">Priority: {animationState.executing.priority}</div>
-                )}
-              </div>
+              (() => {
+                const processColor = getProcessColor(animationState.executing.id);
+                return (
+                  <div
+                    className="text-white px-6 py-4 rounded-xl font-bold text-lg shadow-2xl transform transition-all duration-300"
+                    style={{ backgroundColor: processColor.solid }}
+                  >
+                    <div className="text-2xl mb-1">{animationState.executing.id}</div>
+                    <div className="text-sm opacity-90">Remaining: {animationState.remainingBurst?.[animationState.executing.id] ?? animationState.executing.burst}/{animationState.executing.burst}</div>
+                    {algorithm === 'Priority' && (
+                      <div className="text-sm opacity-90">Priority: {animationState.executing.priority}</div>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <div className="text-muted-foreground text-sm">CPU is IDLE</div>
             )}
@@ -480,15 +520,19 @@ const QueueAnimation: React.FC<QueueAnimationProps> = ({ processes, algorithm, t
             {animationState.completed.length === 0 ? (
               <span className="text-muted-foreground text-sm">No processes completed yet</span>
             ) : (
-              animationState.completed.map((process) => (
-                <div
-                  key={process.id}
-                  className={`${getProcessColor(process.id)} text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg opacity-70 transition-all duration-300`}
-                >
-                  <div>{process.id}</div>
-                  <div className="text-xs opacity-60">✓ Done</div>
-                </div>
-              ))
+              animationState.completed.map((process) => {
+                const processColor = getProcessColor(process.id);
+                return (
+                  <div
+                    key={process.id}
+                    className="process-card text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg opacity-70 transition-all duration-300"
+                    style={{ backgroundColor: processColor.solid }}
+                  >
+                    <div>{process.id}</div>
+                    <div className="text-xs opacity-60">✓ Done</div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

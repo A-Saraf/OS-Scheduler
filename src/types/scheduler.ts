@@ -44,12 +44,70 @@ export interface AlgorithmComparison {
 
 export type AlgorithmType = 'FCFS' | 'SJF' | 'SRTF' | 'Priority' | 'RoundRobin';
 
+export interface AlgorithmComplexity {
+  timeComplexity: {
+    best: string;
+    average: string;
+    worst: string;
+  };
+  spaceComplexity: string;
+  dataStructures: string[];
+}
+
 export const algorithmNames: Record<AlgorithmType, string> = {
   FCFS: 'First Come First Served (FCFS)',
   SJF: 'Shortest Job First (SJF)',
   SRTF: 'Shortest Remaining Time First (SRTF)',
   Priority: 'Priority Scheduling (Preemptive)',
   RoundRobin: 'Round Robin',
+};
+
+export const algorithmComplexity: Record<AlgorithmType, AlgorithmComplexity> = {
+  FCFS: {
+    timeComplexity: {
+      best: "O(n)",
+      average: "O(n)",
+      worst: "O(n)"
+    },
+    spaceComplexity: "O(n)",
+    dataStructures: ["Queue (FIFO)", "Array"]
+  },
+  SJF: {
+    timeComplexity: {
+      best: "O(n log n)",
+      average: "O(n log n)",
+      worst: "O(n²)"
+    },
+    spaceComplexity: "O(n)",
+    dataStructures: ["Array", "Sorting", "Linear Search"]
+  },
+  SRTF: {
+    timeComplexity: {
+      best: "O(n log n)",
+      average: "O(n log n)",
+      worst: "O(n²)"
+    },
+    spaceComplexity: "O(n)",
+    dataStructures: ["Priority Queue (Min-Heap)", "Array"]
+  },
+  Priority: {
+    timeComplexity: {
+      best: "O(n log n)",
+      average: "O(n log n)",
+      worst: "O(n²)"
+    },
+    spaceComplexity: "O(n)",
+    dataStructures: ["Priority Queue (Min-Heap)", "Array"]
+  },
+  RoundRobin: {
+    timeComplexity: {
+      best: "O(n)",
+      average: "O(n × q)",
+      worst: "O(n × q)"
+    },
+    spaceComplexity: "O(n)",
+    dataStructures: ["Circular Queue", "Array"]
+  }
 };
 
 export const algorithmDescriptions: Record<AlgorithmType, string> = {

@@ -1,19 +1,55 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { TimelineItem } from '@/types/scheduler';
+import { PROCESS_COLORS, ProcessColor } from '@/utils/processColors';
+
+// Chart layout constants
+const CHART_PADDING = 32; // Horizontal padding for chart container (px)
+const MIN_CONTAINER_WIDTH = 400; // Minimum chart container width (px)
+const DEFAULT_CONTAINER_WIDTH = 600; // Default width before measurement (px)
+
+// Bar sizing constants
+const MIN_WIDTH_PER_UNIT = 40; // Minimum pixels per time unit
+const MAX_WIDTH_PER_UNIT = 80; // Maximum pixels per time unit
+const MIN_BAR_WIDTH = 28; // Minimum bar width for visibility (px)
+const BAR_HEIGHT = 48; // Height of each Gantt bar (px)
+const BAR_TOP_OFFSET = 8; // Top offset within container (px)
 
 interface GanttChartProps {
   timeline: TimelineItem[];
 }
 
 const GanttChart: React.FC<GanttChartProps> = ({ timeline }) => {
-  // Create a color map for unique processes
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(DEFAULT_CONTAINER_WIDTH);
+
+  // Get actual container width for responsive sizing
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth - CHART_PADDING);
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  // Create a color map for unique processes - must be called before any early returns (Rules of Hooks)
   const processColorMap = useMemo(() => {
-    const uniqueProcesses = [...new Set(timeline.filter(t => t.process !== 'IDLE').map(t => t.process))];
-    const colorMap: Record<string, number> = {};
+    if (!timeline || timeline.length === 0) return {} as Record<string, ProcessColor>;
+    const filteredTimeline = timeline.filter(t => t.process !== 'IDLE');
+    const uniqueProcesses = [...new Set(filteredTimeline.map(t => t.process))];
+    const colorMap: Record<string, ProcessColor> = {};
     uniqueProcesses.forEach((process, index) => {
-      colorMap[process] = index % 6;
+      colorMap[process] = PROCESS_COLORS[index % PROCESS_COLORS.length];
     });
     return colorMap;
+  }, [timeline]);
+
+  // Get unique processes for legend
+  const uniqueProcesses = useMemo(() => {
+    if (!timeline || timeline.length === 0) return [];
+    return [...new Set(timeline.filter(t => t.process !== 'IDLE').map(t => t.process))];
   }, [timeline]);
 
   if (!timeline || timeline.length === 0) {
@@ -37,109 +73,159 @@ const GanttChart: React.FC<GanttChartProps> = ({ timeline }) => {
     );
   }
 
+  // Calculate responsive scaling to fit within container
   const maxTime = Math.max(...timeline.map(t => t.end));
 
-  // Color configurations for 3D effect
-  const colorConfigs = [
-    { bg: 'linear-gradient(180deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%)', shadow: 'rgba(59, 130, 246, 0.5)', text: '#e0e7ff' },
-    { bg: 'linear-gradient(180deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%)', shadow: 'rgba(139, 92, 246, 0.5)', text: '#ede9fe' },
-    { bg: 'linear-gradient(180deg, #f472b6 0%, #ec4899 50%, #db2777 100%)', shadow: 'rgba(236, 72, 153, 0.5)', text: '#fce7f3' },
-    { bg: 'linear-gradient(180deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)', shadow: 'rgba(245, 158, 11, 0.5)', text: '#1e293b' },
-    { bg: 'linear-gradient(180deg, #34d399 0%, #10b981 50%, #059669 100%)', shadow: 'rgba(16, 185, 129, 0.5)', text: '#d1fae5' },
-    { bg: 'linear-gradient(180deg, #22d3ee 0%, #06b6d4 50%, #0891b2 100%)', shadow: 'rgba(6, 182, 212, 0.5)', text: '#cffafe' },
-  ];
+  // Use container width for responsive sizing with extra padding for scroll comfort
+  const availableWidth = Math.max(containerWidth, MIN_CONTAINER_WIDTH) - CHART_PADDING;
 
-  // Calculate minimum width per time unit to prevent overlapping
-  const minWidthPerUnit = 50; // pixels per time unit - increased for better spacing
-  const totalWidth = Math.max(maxTime * minWidthPerUnit, 800); // minimum 800px or calculated width
-  const widthPerUnit = minWidthPerUnit; // Use fixed width per unit to prevent overflow
+  // Calculate width per unit based on total time and available space
+  let widthPerUnit: number;
+  const idealWidth = availableWidth / maxTime;
+
+  if (idealWidth >= MIN_WIDTH_PER_UNIT && idealWidth <= MAX_WIDTH_PER_UNIT) {
+    widthPerUnit = idealWidth;
+  } else if (idealWidth > MAX_WIDTH_PER_UNIT) {
+    widthPerUnit = MAX_WIDTH_PER_UNIT;
+  } else {
+    widthPerUnit = MIN_WIDTH_PER_UNIT;
+  }
+
+  // Calculate exact content width with extra padding for the last time label
+  const contentWidth = Math.max(maxTime * widthPerUnit + 40, availableWidth);
+
+  // Filter timeline to only include blocks up to maxTime
+  const filteredTimeline = timeline.filter(item => item.start < maxTime);
 
   return (
-    <div className="space-y-3 w-full">
+    <div ref={containerRef} className="space-y-4 w-full">
+      {/* Process Legend */}
+      {uniqueProcesses.length > 0 && (
+        <div className="flex flex-wrap gap-3 px-4 py-2 bg-black/20 rounded-lg">
+          {uniqueProcesses.map((process) => {
+            const color = processColorMap[process];
+            return (
+              <div key={process} className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded"
+                  style={{ background: color?.gradient }}
+                />
+                <span className="text-sm font-medium text-foreground">{process}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Scrollable container - only scrolls when content exceeds container */}
-      <div 
-        className="overflow-x-auto overflow-y-visible" 
-        style={{ 
+      <div
+        className="overflow-x-auto overflow-y-visible custom-scrollbar"
+        style={{
           maxWidth: '100%',
           width: '100%',
-          scrollbarWidth: 'thin'
         }}
       >
-        <div style={{ width: `${totalWidth}px`, minWidth: '100%' }}>
-          {/* Gantt bars - using absolute positioning for proper alignment */}
-          <div className="relative h-20 m-4 rounded-xl bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)]" style={{ width: `${maxTime * widthPerUnit}px` }}>
-            {timeline.map((item, index) => {
-              const width = (item.end - item.start) * widthPerUnit;
-              const left = item.start * widthPerUnit;
-              const isIdle = item.process === 'IDLE';
-              const colorIndex = isIdle ? -1 : processColorMap[item.process];
-              const config = isIdle ? null : colorConfigs[colorIndex];
+        <div style={{ width: `${contentWidth}px`, minWidth: '100%' }}>
+          {/* Gantt bars container */}
+          <div className="relative px-4" style={{ width: `${contentWidth}px` }}>
+            {/* Gantt bars */}
+            <div
+              className="relative rounded-xl bg-[rgba(0,0,0,0.25)] border border-[rgba(255,255,255,0.08)] p-3"
+              style={{ width: `${contentWidth - CHART_PADDING}px`, minHeight: `${BAR_HEIGHT + BAR_TOP_OFFSET * 2}px` }}
+            >
+              {filteredTimeline.map((item, index) => {
+                const barWidth = (item.end - item.start) * widthPerUnit;
+                const left = item.start * widthPerUnit;
+                const isIdle = item.process === 'IDLE';
+                const processColor = isIdle ? null : processColorMap[item.process];
 
-              return (
-                <div
-                  key={`${item.process}-${item.start}-${index}`}
-                  className="gantt-bar-3d absolute"
-                  style={{
-                    left: `${left}px`,
-                    width: `${width}px`,
-                    minWidth: '30px',
-                    height: '48px',
-                    top: '16px',
-                    background: isIdle
-                      ? 'repeating-linear-gradient(45deg, rgba(100, 116, 139, 0.15), rgba(100, 116, 139, 0.15) 8px, rgba(71, 85, 105, 0.15) 8px, rgba(71, 85, 105, 0.15) 16px)'
-                      : config?.bg,
-                    color: isIdle ? '#64748b' : config?.text,
-                    boxShadow: isIdle
-                      ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.3)'
-                      : `inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 12px ${config?.shadow}`,
-                    borderRadius: '6px',
-                    padding: '12px 8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '13px',
-                    textShadow: isIdle ? 'none' : '0 1px 2px rgba(0,0,0,0.3)',
-                    border: isIdle ? '1px dashed rgba(100, 116, 139, 0.4)' : '1px solid rgba(255,255,255,0.2)',
-                    transform: 'translateY(0)',
-                    transition: 'all 0.2s ease',
-                    animation: `growBar 0.5s ease forwards`,
-                    animationDelay: `${index * 0.08}s`,
-                    opacity: 0,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isIdle) {
-                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                      e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2), 0 8px 20px ${config?.shadow}`;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    if (!isIdle && config) {
-                      e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 12px ${config.shadow}`;
-                    }
-                  }}
-                >
-                  {item.process}
-                </div>
-              );
-            })}
-          </div>
+                return (
+                  <div
+                    key={`${item.process}-${item.start}-${index}`}
+                    className="gantt-bar-3d absolute"
+                    style={{
+                      left: `${left}px`,
+                      width: `${Math.max(barWidth, MIN_BAR_WIDTH)}px`,
+                      height: `${BAR_HEIGHT}px`,
+                      top: `${BAR_TOP_OFFSET}px`,
+                      background: isIdle
+                        ? 'repeating-linear-gradient(45deg, rgba(100, 116, 139, 0.2), rgba(100, 116, 139, 0.2) 6px, rgba(71, 85, 105, 0.2) 6px, rgba(71, 85, 105, 0.2) 12px)'
+                        : processColor?.gradient,
+                      color: isIdle ? '#64748b' : processColor?.text,
+                      boxShadow: isIdle
+                        ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.3)'
+                        : `inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 12px ${processColor?.shadow}`,
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      textShadow: isIdle ? 'none' : '0 1px 2px rgba(0,0,0,0.3)',
+                      border: isIdle ? '1px dashed rgba(100, 116, 139, 0.4)' : '1px solid rgba(255,255,255,0.2)',
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isIdle && processColor) {
+                        e.currentTarget.style.transform = 'translateY(-3px) scale(1.03)';
+                        e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2), 0 10px 25px ${processColor.shadow}`;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                      if (!isIdle && processColor) {
+                        e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 12px ${processColor.shadow}`;
+                      }
+                    }}
+                    title={`${item.process}: ${item.start} - ${item.end}`}
+                  >
+                    {item.process}
+                  </div>
+                );
+              })}
+            </div>
 
-          {/* Time axis */}
-          <div className="relative h-8 mx-4" style={{ width: `${maxTime * widthPerUnit}px` }}>
-            {Array.from({ length: maxTime + 1 }, (_, t) => (
+            {/* Time axis */}
+            <div className="relative h-10 mt-2" style={{ width: `${contentWidth - CHART_PADDING}px` }}>
+              {/* Main axis line */}
               <div
-                key={t}
-                className="absolute text-xs text-muted-foreground font-semibold"
-                style={{
-                  left: `${t * widthPerUnit}px`,
-                  transform: 'translateX(-50%)',
-                }}
-              >
-                {t}
-              </div>
-            ))}
+                className="absolute top-0 h-px bg-foreground/30"
+                style={{ width: '100%' }}
+              />
+
+              {/* Time points */}
+              {(() => {
+                const significantTimes = new Set<number>();
+                filteredTimeline.forEach(item => {
+                  significantTimes.add(item.start);
+                  significantTimes.add(item.end);
+                });
+                significantTimes.add(0);
+
+                const timePoints = Array.from(significantTimes).sort((a, b) => a - b);
+
+                return timePoints.map((t) => (
+                  <div key={t}>
+                    <div
+                      className="absolute w-px h-3 bg-foreground/50"
+                      style={{ left: `${t * widthPerUnit}px`, top: '0px' }}
+                    />
+                    <div
+                      className="absolute text-xs text-muted-foreground font-medium"
+                      style={{
+                        left: `${t * widthPerUnit}px`,
+                        top: '16px',
+                        transform: 'translateX(-50%)',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {t}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
           </div>
         </div>
       </div>
@@ -148,3 +234,4 @@ const GanttChart: React.FC<GanttChartProps> = ({ timeline }) => {
 };
 
 export default GanttChart;
+

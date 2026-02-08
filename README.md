@@ -1,95 +1,104 @@
-# OS-Scheduler: An Interactive CPU Scheduling Visualization and Performance Analysis Tool
+# DSA Algorithm Visualizer: An Interactive Data Structures and Algorithms Learning Platform
 
 <div>
 
-**🚀 Live Application:** [https://os-scheduler-navy.vercel.app/](https://os-scheduler-navy.vercel.app/)
+**🚀 Live Application:** [https://dsa-project-ecru-one.vercel.app/](https://dsa-project-ecru-one.vercel.app/)
 
 </div>
 
 ## 📖 About
 
-OS-Scheduler is an **interactive web application** designed to help students and developers understand CPU scheduling algorithms through **visual learning**. The application provides real-time animations, Gantt charts, and performance metrics to make complex operating system concepts intuitive and engaging.
+DSA Algorithm Visualizer is an **interactive web application** designed to help students and developers understand **Data Structures and Algorithms** through **visual learning**. The application provides real-time animations, complexity analysis, and detailed algorithmic breakdowns to make complex DSA concepts intuitive and engaging. Perfect for computer science students and educators looking to explore algorithmic efficiency and data structure applications.
 
 ## 🎯 Key Features
 
 ### 📊 **Interactive Visualizations**
-- **🎬 Real-time Animations**: Watch processes move through queues and execute on CPU
-- **📈 Gantt Charts**: Visual timeline representation of process execution
-- **📊 Performance Metrics**: Detailed analysis of waiting time, turnaround time, and response time
+- **🎬 Real-time Animations**: Watch algorithms execute step-by-step with visual feedback
+- **📈 Complexity Charts**: Big O notation comparison across different algorithms
+- **📊 Algorithm Analysis**: Detailed time and space complexity breakdowns
+- **🔍 Data Structure Visualization**: See queues, heaps, and arrays in action
 
 ### 🔄 **Multiple Scheduling Algorithms**
-- **🏃 First Come First Served (FCFS)**: Processes execute in arrival order
-- **⚡ Shortest Job First (SJF)**: Non-preemptive shortest burst time first
-- **🎯 Shortest Remaining Time First (SRTF)**: Preemptive version of SJF
-- **🔢 Priority Scheduling**: Processes execute based on priority levels
-- **🔄 Round Robin**: Time-slice based scheduling with configurable quantum
+- **🏃 First Come First Served (FCFS)**: FIFO queue implementation with O(n) complexity
+- **⚡ Shortest Job First (SJF)**: Sorting-based selection with O(n log n) average complexity
+- **🎯 Shortest Remaining Time First (SRTF)**: Priority queue (min-heap) with O(n log n) complexity
+- **🔢 Priority Scheduling**: Min-heap implementation with O(n log n) complexity
+- **🔄 Round Robin**: Circular queue with O(n × q) complexity where q is time quantum
 
 ### 📝 **Flexible Input Methods**
 - **📋 Table Input**: Manual process entry with intuitive form interface
 - **📤 CSV Upload**: Bulk process data import
 - **⚙️ Custom Parameters**: Configure arrival time, burst time, and priority
+- **🎛️ Algorithm Configuration**: Adjustable time quantum and priority settings
 
 ### 🎨 **Modern UI/UX**
 - **🌙 Dark Theme**: Eye-friendly glassmorphism design
 - **📱 Responsive Layout**: Works seamlessly on desktop and mobile
 - **🎭 Smooth Animations**: CSS transitions and micro-interactions
 - **🔊 Sound Effects**: Audio feedback for process events
+- **📚 Educational Tooltips**: Context-sensitive help and explanations
 
-## 🧠 Understanding CPU Scheduling
+## 🧠 Understanding Data Structures & Algorithms
 
-CPU scheduling is a fundamental concept in operating systems that determines which process gets access to the CPU when multiple processes are ready to execute. The **queue data structure** plays a crucial role in this process:
+This application demonstrates the practical application of **Data Structures and Algorithms** through CPU scheduling scenarios. Each algorithm showcases different data structures and their efficiency characteristics:
 
-### 📚 **The Role of Queues in Scheduling**
+### 📚 **Data Structures in Action**
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   New Processes │───▶│   Ready Queue   │───▶│   CPU Execution │
+│   Input Data    │───▶│  Data Structure │───▶│  Algorithm     │
 │                 │    │                 │    │                 │
-│ • Arrival Time  │    │ • FCFS Queue    │    │ • Running State │
-│ • Burst Time    │    │ • Priority Queue│    │ • Time Quantum  │
-│ • Priority      │    │ • Round Robin   │    │                 │
+│ • Process Array │    │ • FIFO Queue    │    │ • FCFS O(n)     │
+│ • Burst Times   │    │ • Min-Heap      │    │ • SJF O(n log n)│
+│ • Priorities    │    │ • Circular Queue│    │ • SRTF O(n log n)│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼
                        ┌─────────────────┐
-                       │  Waiting Queue  │
+                       │  Complexity     │
+                       │  Analysis       │
                        │                 │
-                       │ • I/O Waiting   │
-                       │ • Not Ready     │
+                       │ • Time: O(1)-O(n²)│
+                       │ • Space: O(n)   │
                        └─────────────────┘
 ```
 
-### 🔍 **Algorithm Deep Dive**
+### 🔍 **Algorithm Deep Dive & Complexity Analysis**
 
 #### **1. First Come First Served (FCFS)**
-- **Principle**: "First in, first out" approach
-- **Queue Type**: Simple FIFO queue
-- **Best for**: Batch systems with predictable workloads
-- **⚠️ Convoy Effect**: Short processes wait behind long ones
+- **Data Structure**: FIFO Queue
+- **Time Complexity**: O(n) - Single pass through processes
+- **Space Complexity**: O(n) - Process storage
+- **Best Use Case**: Simple scenarios with predictable workloads
+- **⚠️ Trade-off**: Convoy effect - short processes wait behind long ones
 
 #### **2. Shortest Job First (SJF)**
-- **Principle**: Execute shortest burst time first
-- **Queue Type**: Sorted by burst time
-- **Best for**: Minimizing average waiting time
-- **⚠️ Starvation**: Long processes may wait indefinitely
+- **Data Structure**: Array with Sorting
+- **Time Complexity**: O(n log n) average, O(n²) worst case
+- **Space Complexity**: O(n) - Process and timeline storage
+- **Best Use Case**: Minimizing average waiting time
+- **⚠️ Trade-off**: Requires burst time knowledge, potential starvation
 
 #### **3. Shortest Remaining Time First (SRTF)**
-- **Principle**: Preemptive SJF - always run shortest remaining
-- **Queue Type**: Dynamic priority queue
-- **Best for**: Interactive systems requiring quick response
-- **⚡ High Overhead**: Frequent context switching
+- **Data Structure**: Priority Queue (Min-Heap)
+- **Time Complexity**: O(n log n) - Heap operations dominate
+- **Space Complexity**: O(n) - Heap and process storage
+- **Best Use Case**: Interactive systems requiring quick response
+- **⚡ Trade-off**: High overhead from frequent context switching
 
 #### **4. Priority Scheduling**
-- **Principle**: Higher priority processes execute first
-- **Queue Type**: Priority queue (min/max heap)
-- **Best for**: Real-time systems with deadlines
-- **⚠️ Aging**: Required to prevent starvation
+- **Data Structure**: Priority Queue (Min-Heap)
+- **Time Complexity**: O(n log n) - Heap insert/extract operations
+- **Space Complexity**: O(n) - Heap and auxiliary storage
+- **Best Use Case**: Real-time systems with deadline constraints
+- **⚠️ Trade-off**: Low-priority processes may starve without aging
 
 #### **5. Round Robin**
-- **Principle**: Equal time slices for all processes
-- **Queue Type**: Circular queue with time quantum
-- **Best for**: Time-sharing systems
-- **⚙️ Tunable**: Time quantum affects performance
+- **Data Structure**: Circular Queue
+- **Time Complexity**: O(n × q) where q is time quantum
+- **Space Complexity**: O(n) - Queue and process management
+- **Best Use Case**: Time-sharing systems with fair CPU distribution
+- **⚙️ Trade-off**: Performance heavily dependent on quantum size
 
 ## 🚀 Getting Started
 
@@ -143,18 +152,27 @@ npm run preview
 ### **Step 3: Analyze Results**
 1. **Gantt Chart View**: Visual timeline of process execution
 2. **Animation View**: Real-time process queue visualization
-3. **Performance Metrics**: Detailed analysis table
-4. **Comparison**: Compare different algorithms
+3. **Complexity Analysis**: Big O notation and data structure breakdown
+4. **Algorithm Comparison**: Compare efficiency and complexity across algorithms
+5. **Detailed Explanations**: Click info buttons for step-by-step algorithm analysis
 
-## 📊 Performance Metrics
+## 📊 Algorithm Complexity Analysis
 
-| Metric | Formula | Significance |
-|--------|---------|--------------|
-| **Waiting Time** | `Turnaround Time - Burst Time` | Time spent in ready queue |
-| **Turnaround Time** | `Completion Time - Arrival Time` | Total time from arrival to completion |
-| **Response Time** | `First Response - Arrival Time` | Time until first CPU allocation |
-| **CPU Utilization** | `Busy Time / Total Time` | Efficiency of CPU usage |
-| **Throughput** | `Processes Completed / Time Unit` | System productivity |
+| Algorithm | Time Complexity | Space Complexity | Data Structure | Best Case |
+|------------|----------------|------------------|---------------|-----------|
+| **FCFS** | O(n) | O(n) | FIFO Queue | Already sorted |
+| **SJF** | O(n log n) avg, O(n²) worst | O(n) | Array + Sorting | Small burst times |
+| **SRTF** | O(n log n) avg, O(n²) worst | O(n) | Min-Heap | Predictable workloads |
+| **Priority** | O(n log n) avg, O(n²) worst | O(n) | Min-Heap | Clear priority levels |
+| **Round Robin** | O(n × q) | O(n) | Circular Queue | Optimal quantum |
+
+### 🎯 **Key DSA Concepts Demonstrated**
+- **Queue Operations**: Enqueue, dequeue, circular queue behavior
+- **Heap Operations**: Insert, extract-min, heapify
+- **Sorting Algorithms**: Comparison of different sorting approaches
+- **Complexity Analysis**: Big O notation in practice
+- **Data Structure Selection**: Choosing the right structure for the problem
+- **Algorithm Trade-offs**: Time vs space, simplicity vs efficiency
 
 ## 🎨 Technology Stack
 
@@ -174,16 +192,19 @@ npm run preview
 - **Sound Effects**: Audio feedback for process events
 
 ### **📈 Comparison Tools**
-- **Side-by-side Analysis**: Compare multiple algorithms
-- **Performance Tables**: Detailed metric breakdowns
-- **Visual Insights**: Color-coded Gantt charts
-- **Export Options**: Save results for further analysis
+- **Side-by-side Analysis**: Compare multiple algorithms with complexity charts
+- **Complexity Breakdowns**: Detailed Big O notation analysis
+- **Visual Insights**: Color-coded complexity comparisons
+- **Interactive Info Modals**: Click for detailed algorithm explanations
+- **Data Structure Showcase**: See queues, heaps, and arrays in action
 
 ### **🎯 Educational Value**
-- **Interactive Learning**: Hands-on exploration of concepts
-- **Visual Understanding**: See abstract concepts in action
+- **Interactive Learning**: Hands-on exploration of DSA concepts
+- **Visual Understanding**: See abstract algorithms in action
 - **Experimentation**: Try different scenarios and parameters
-- **Performance Analysis**: Understand trade-offs between algorithms
+- **Complexity Analysis**: Understand Big O notation through examples
+- **Algorithm Selection**: Learn when to use which data structure
+- **Performance Trade-offs**: Compare efficiency vs simplicity
 
 <div align="center">
 

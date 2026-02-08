@@ -5,9 +5,15 @@ type SoundType = 'addProcess' | 'removeProcess' | 'importProcesses' | 'runGantt'
 // Audio context singleton
 let audioContext: AudioContext | null = null;
 
+// Extend Window interface for webkitAudioContext compatibility
+interface WebkitWindow extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 const getAudioContext = () => {
   if (!audioContext) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const windowWithWebkit = window as WebkitWindow;
+    audioContext = new (window.AudioContext || windowWithWebkit.webkitAudioContext!)();
   }
   return audioContext;
 };
@@ -60,14 +66,32 @@ const soundConfigs: Record<SoundType, { frequency: number | number[]; duration: 
 
 export const useSoundEffects = () => {
   const isEnabledRef = useRef(true);
+  const lastPlayedRef = useRef<Record<SoundType, number>>({} as Record<SoundType, number>);
+
+  // Minimum cooldown between same sound type (prevents spam at high animation speeds)
+  const SOUND_COOLDOWN_MS = 180;
 
   const playSound = useCallback((type: SoundType) => {
     if (!isEnabledRef.current) return;
+
+    // Throttle: skip if same sound was played too recently
+    const now = Date.now();
+    const lastPlayed = lastPlayedRef.current[type] || 0;
+    if (now - lastPlayed < SOUND_COOLDOWN_MS) {
+      return; // Skip this sound to prevent spam
+    }
+    lastPlayedRef.current[type] = now;
 
     try {
       const ctx = getAudioContext();
       const config = soundConfigs[type];
       const frequencies = Array.isArray(config.frequency) ? config.frequency : [config.frequency];
+
+      // Reduce gain slightly for rapid sounds (softer at high speeds)
+      const timeSinceLastAny = Math.min(
+        ...Object.values(lastPlayedRef.current).map(t => now - t).filter(t => t > 0)
+      ) || 1000;
+      const gainMultiplier = timeSinceLastAny < 300 ? 0.6 : 1.0;
 
       frequencies.forEach((freq, index) => {
         const oscillator = ctx.createOscillator();
@@ -76,8 +100,9 @@ export const useSoundEffects = () => {
         oscillator.type = config.type;
         oscillator.frequency.setValueAtTime(freq, ctx.currentTime + index * config.duration);
 
+        const adjustedGain = config.gain * gainMultiplier;
         gainNode.gain.setValueAtTime(0, ctx.currentTime + index * config.duration);
-        gainNode.gain.linearRampToValueAtTime(config.gain, ctx.currentTime + index * config.duration + 0.02);
+        gainNode.gain.linearRampToValueAtTime(adjustedGain, ctx.currentTime + index * config.duration + 0.02);
         gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * config.duration + config.duration);
 
         oscillator.connect(gainNode);

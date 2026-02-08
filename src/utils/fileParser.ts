@@ -43,7 +43,8 @@ export const processUploadedData = (
     let priority = 1;
 
     // Find Process ID
-    if (normalizedRow.process) processId = normalizedRow.process;
+    if (normalizedRow.id) processId = normalizedRow.id;
+    else if (normalizedRow.process) processId = normalizedRow.process;
     else if (normalizedRow.processid) processId = normalizedRow.processid;
     else if (normalizedRow.pid) processId = normalizedRow.pid;
 
@@ -97,7 +98,7 @@ export const processUploadedData = (
 
 // Generate sample CSV template
 export const generateSampleCSV = (): string => {
-  return `Process,ArrivalTime,BurstTime,Priority
+  return `id,arrival,burst,priority
 P1,0,5,2
 P2,1,3,1
 P3,2,8,3
