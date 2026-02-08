@@ -1,11 +1,11 @@
-DSA ALGORITHM VISUALIZER - TECHNICAL DOCUMENTATION
+OS-SCHEDULER - TECHNICAL DOCUMENTATION
 =====================================================
 
 PROJECT OVERVIEW
 ----------------
-Project Name: DSA Algorithm Visualizer
+Project Name: OS-Scheduler
 Type: Interactive Web Application
-Purpose: Educational platform for learning Data Structures and Algorithms
+Purpose: CPU Scheduling visualization and performance analysis tool
 Framework: React 18 + TypeScript
 Build Tool: Vite
 
@@ -26,9 +26,23 @@ Styling & UI:
 
 Data Visualization:
 - Recharts 2.15.4 - Chart library for React
-  - Bar charts for complexity comparison
-  - Line charts for performance metrics
+  - Bar charts for algorithm comparison
+  - Performance metrics visualization
   - Custom tooltips and legends
+
+Form Management:
+- React Hook Form 7.61.1 - Form state management
+- Zod 3.25.76 - Schema validation
+- @hookform/resolvers 3.10.0 - Form validation integration
+
+State Management & Routing:
+- React Query 5.83.0 - Server state management
+- React Router DOM 6.30.1 - Client-side routing
+
+User Experience:
+- Sonner 1.7.4 - Toast notifications
+- Framer Motion - Animations and transitions
+- Tailwind Animate - CSS animations
 
 Development Tools:
 - ESLint 9.32.0 - Code linting and formatting
@@ -68,25 +82,27 @@ src/
 │   └── utils.ts               # Utility functions
 └── main.tsx                   # Application entry point
 
-CORE ALGORITHM IMPLEMENTATION
-------------------------------
+CORE CPU SCHEDULING ALGORITHM IMPLEMENTATION
+----------------------------------------------
+
+CPU Scheduling Algorithms:
+1. FCFS (First Come First Served) - O(n) time complexity
+2. SJF (Shortest Job First) - O(n log n) average, O(n²) worst
+3. SRTF (Shortest Remaining Time First) - O(n log n) average, O(n²) worst
+4. Priority Scheduling - O(n log n) average, O(n²) worst
+5. Round Robin - O(n × q) where q is time quantum
 
 Data Structures Used:
-1. FIFO Queue - FCFS algorithm implementation (O(n) time complexity)
-2. Min-Heap (Priority Queue) - SRTF and Priority scheduling (O(n log n))
-3. Circular Queue - Round Robin algorithm (O(n × q) where q is time quantum)
-4. Arrays - Process storage and sorting operations
+- FIFO Queue - FCFS algorithm implementation
+- Min-Heap (Priority Queue) - SRTF and Priority scheduling
+- Circular Queue - Round Robin algorithm
+- Arrays - Process storage and sorting operations
 
-Algorithm Complexity Analysis:
-interface AlgorithmComplexity {
-  timeComplexity: {
-    best: string;      // O(n), O(log n), etc.
-    average: string;   // Average case complexity
-    worst: string;     // Worst case complexity
-  };
-  spaceComplexity: string;    // Space requirements
-  dataStructures: string[];   // Data structures used
-}
+Process Management:
+- Process creation and validation
+- Arrival time and burst time management
+- Priority levels for priority scheduling
+- Time quantum configuration for Round Robin
 
 Algorithm Implementations:
 - FCFS: O(n) time complexity, FIFO queue
@@ -172,14 +188,18 @@ Development Dependencies:
 KEY FEATURES
 ------------
 
-- Interactive Visualizations: Real-time algorithm execution with animations
-- Complexity Analysis: Big O notation breakdowns and comparisons
-- Data Structure Demos: Queues, heaps, and arrays in action
-- Educational Tools: Step-by-step explanations and info modals
-- Modern UI: Glassmorphism design with smooth animations
+- CPU Scheduling Visualization: Real-time algorithm execution with animations
+- Interactive Gantt Charts: Timeline visualization of process execution
+- Queue Animation: Watch processes move through scheduling queues
+- Performance Analysis: Waiting time, turnaround time, response time metrics
+- Algorithm Comparison: Side-by-side performance comparison
+- CSV Import: Bulk process data upload functionality
 - Sound Effects: Audio feedback for process events
-- CSV Import: Bulk process data upload
-- Responsive Design: Works on desktop and mobile
+- Modern UI: Glassmorphism design with smooth animations
+- Responsive Design: Works seamlessly on desktop and mobile
+- Educational Info Modals: Detailed algorithm explanations
+- Preset Scenarios: Pre-configured test cases
+- Keyboard Shortcuts: Ctrl+Enter to run, Esc to reset
 
 PERFORMANCE METRICS
 ------------------
@@ -216,26 +236,31 @@ All algorithms use O(n) space for process storage and timeline data.
 EDUCATIONAL VALUE
 -----------------
 
-DSA Concepts Demonstrated:
+Operating System Concepts Demonstrated:
+- CPU Scheduling Algorithms: FCFS, SJF, SRTF, Priority, Round Robin
 - Queue Operations: Enqueue, dequeue, circular queue behavior
-- Heap Operations: Insert, extract-min, heapify
-- Sorting Algorithms: Comparison of different approaches
-- Complexity Analysis: Big O notation in practice
-- Data Structure Selection: Choosing the right structure
-- Algorithm Trade-offs: Time vs space, simplicity vs efficiency
+- Process States: New, Ready, Running, Waiting, Terminated
+- Context Switching: Process switching overhead
+- Performance Metrics: Waiting time, turnaround time, response time
+- Time Quantum: Time slice management in Round Robin
+- Priority Levels: Process priority management
+- Gantt Charts: Timeline representation of process execution
 
 Target Audience:
-- Computer Science students
-- DSA learners
+- Computer Science students (OS courses)
+- Operating Systems learners
 - Algorithm enthusiasts
 - Educators and teachers
+- System performance analysts
 
 Learning Outcomes:
-- Understanding algorithmic complexity
-- Visualizing data structure operations
+- Understanding CPU scheduling algorithms
+- Visualizing process queue management
 - Comparing algorithm efficiency
-- Applying theoretical concepts to practical problems
+- Analyzing performance trade-offs
+- Applying theoretical OS concepts to practical scenarios
 
 =====================================================
 Generated: February 2026
-Project Repository: DSA Algorithm Visualizer
+Project Repository: OS-Scheduler
+Purpose: CPU Scheduling Visualization and Performance Analysis Tool
