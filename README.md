@@ -2,7 +2,7 @@
 
 <div>
 
-**🚀 Live Application:** [https://dsa-project-ecru-one.vercel.app/](https://dsa-project-ecru-one.vercel.app/)
+**🚀 Live Application:** [https://os-scheduler-navy.vercel.app/](https://os-scheduler-navy.vercel.app/)
 
 </div>
 
