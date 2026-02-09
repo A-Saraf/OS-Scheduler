@@ -72,7 +72,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ existingProcesses, onProcessesI
 
   return (
     <div className="space-y-4">
-      {/* Upload Area */}
+      {/* Upload Areaa */}
       <div
         className={`upload-dropzone ${isDragOver ? 'dragover' : ''}`}
         onClick={() => fileInputRef.current?.click()}
