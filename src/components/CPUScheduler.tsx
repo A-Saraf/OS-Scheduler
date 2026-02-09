@@ -244,9 +244,6 @@ const CPUScheduler: React.FC = () => {
           <h2 className="text-lg font-semibold text-foreground mb-2">
             An Interactive CPU Scheduling Visualization and Performance Analysis Tool
           </h2>
-          <p className="text-muted-foreground">
-            Interactive CPU scheduling visualization and performance analysis tool with real-time animation
-          </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-[350px_minmax(0,1fr)] gap-5 items-start relative overflow-x-clip flex-1 min-h-0">
