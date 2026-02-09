@@ -1,4 +1,4 @@
-# DSA Algorithm Visualizer: An Interactive Data Structures and Algorithms Learning Platform
+# OS-Scheduler: An Interactive CPU Scheduling Visualization and Performance Analysis Tool
 
 <div>
 
@@ -8,15 +8,17 @@
 
 ## 📖 About
 
-DSA Algorithm Visualizer is an **interactive web application** designed to help students and developers understand **Data Structures and Algorithms** through **visual learning**. The application provides real-time animations, complexity analysis, and detailed algorithmic breakdowns to make complex DSA concepts intuitive and engaging. Perfect for computer science students and educators looking to explore algorithmic efficiency and data structure applications.
+OS-Scheduler is an **interactive web application** designed to help students and developers understand **CPU Scheduling algorithms** through **visual learning**. The application provides real-time animations, Gantt charts, performance metrics, and text-to-speech narration to make complex operating system concepts intuitive and engaging. Perfect for computer science students and educators looking to explore CPU scheduling algorithms, queue data structures, and performance analysis.
 
 ## 🎯 Key Features
 
 ### 📊 **Interactive Visualizations**
-- **🎬 Real-time Animations**: Watch algorithms execute step-by-step with visual feedback
-- **📈 Complexity Charts**: Big O notation comparison across different algorithms
-- **📊 Algorithm Analysis**: Detailed time and space complexity breakdowns
-- **🔍 Data Structure Visualization**: See queues, heaps, and arrays in action
+- **🎬 Real-time Animations**: Watch processes move through scheduling queues step-by-step
+- **📈 Gantt Charts**: Timeline visualization of process execution
+- **� Performance Metrics**: Detailed analysis of waiting time, turnaround time, response time
+- **� Algorithm Comparison**: Side-by-side performance comparison with charts
+- **🗣️ Text-to-Speech**: Natural voice narration of algorithm information and results
+- **🔍 Queue Visualization**: See FIFO queues, priority queues, and circular queues in action
 
 ### 🔄 **Multiple Scheduling Algorithms**
 - **🏃 First Come First Served (FCFS)**: FIFO queue implementation with O(n) complexity
@@ -36,11 +38,13 @@ DSA Algorithm Visualizer is an **interactive web application** designed to help 
 - **📱 Responsive Layout**: Works seamlessly on desktop and mobile
 - **🎭 Smooth Animations**: CSS transitions and micro-interactions
 - **🔊 Sound Effects**: Audio feedback for process events
-- **📚 Educational Tooltips**: Context-sensitive help and explanations
+- **�️ Voice Narration**: Text-to-speech with natural human-like voices
+- **�📚 Educational Tooltips**: Context-sensitive help and explanations
+- **🎛️ Interactive Controls**: Keyboard shortcuts and intuitive interface
 
-## 🧠 Understanding Data Structures & Algorithms
+## 🧠 Understanding CPU Scheduling & Data Structures
 
-This application demonstrates the practical application of **Data Structures and Algorithms** through CPU scheduling scenarios. Each algorithm showcases different data structures and their efficiency characteristics:
+This application demonstrates the practical application of **CPU Scheduling algorithms** and **queue data structures** through interactive visualizations. Each algorithm showcases different data structures and their efficiency characteristics:
 
 ### 📚 **Data Structures in Action**
 
@@ -137,7 +141,7 @@ npm run preview
 ## 🎮 How to Use
 
 ### **Step 1: Add Processes**
-1. Navigate to the **Manual Input** tab
+1. Navigate to the **Manual Entry** tab
 2. Enter process details:
    - **Process ID**: Unique identifier (P1, P2, etc.)
    - **Arrival Time**: When process becomes ready
@@ -151,28 +155,31 @@ npm run preview
 
 ### **Step 3: Analyze Results**
 1. **Gantt Chart View**: Visual timeline of process execution
-2. **Animation View**: Real-time process queue visualization
-3. **Complexity Analysis**: Big O notation and data structure breakdown
-4. **Algorithm Comparison**: Compare efficiency and complexity across algorithms
-5. **Detailed Explanations**: Click info buttons for step-by-step algorithm analysis
+2. **Queue Animation View**: Real-time process queue visualization
+3. **Performance Metrics**: Detailed analysis table with all metrics
+4. **Algorithm Comparison**: Side-by-side performance comparison with charts
+5. **Voice Narration**: Click speak buttons for audio explanation of results
+6. **Keyboard Shortcuts**: Use Ctrl+Enter to run, Esc to reset
 
-## 📊 Algorithm Complexity Analysis
+## 📊 Performance Metrics & Analysis
 
-| Algorithm | Time Complexity | Space Complexity | Data Structure | Best Case |
-|------------|----------------|------------------|---------------|-----------|
-| **FCFS** | O(n) | O(n) | FIFO Queue | Already sorted |
-| **SJF** | O(n log n) avg, O(n²) worst | O(n) | Array + Sorting | Small burst times |
-| **SRTF** | O(n log n) avg, O(n²) worst | O(n) | Min-Heap | Predictable workloads |
-| **Priority** | O(n log n) avg, O(n²) worst | O(n) | Min-Heap | Clear priority levels |
-| **Round Robin** | O(n × q) | O(n) | Circular Queue | Optimal quantum |
+| Algorithm | Avg Waiting Time | Avg Turnaround Time | Avg Response Time | CPU Utilization | Data Structure |
+|------------|------------------|--------------------|------------------|----------------|---------------|
+| **FCFS** | Variable | Variable | Variable | Variable | FIFO Queue |
+| **SJF** | Low | Low | Variable | High | Array + Sorting |
+| **SRTF** | Low | Low | Very Low | High | Min-Heap |
+| **Priority** | Variable | Variable | Variable | High | Min-Heap |
+| **Round Robin** | Fair | Fair | Low | High | Circular Queue |
 
-### 🎯 **Key DSA Concepts Demonstrated**
+### 🎯 **Key OS Concepts Demonstrated**
+- **CPU Scheduling**: FCFS, SJF, SRTF, Priority, Round Robin algorithms
 - **Queue Operations**: Enqueue, dequeue, circular queue behavior
-- **Heap Operations**: Insert, extract-min, heapify
-- **Sorting Algorithms**: Comparison of different sorting approaches
-- **Complexity Analysis**: Big O notation in practice
-- **Data Structure Selection**: Choosing the right structure for the problem
-- **Algorithm Trade-offs**: Time vs space, simplicity vs efficiency
+- **Process States**: New, Ready, Running, Waiting, Terminated
+- **Context Switching**: Process switching overhead and timing
+- **Performance Metrics**: Waiting time, turnaround time, response time analysis
+- **Time Quantum**: Round Robin time slice management
+- **Priority Levels**: Process priority management and starvation prevention
+- **Gantt Charts**: Timeline representation of process execution
 
 ## 🎨 Technology Stack
 
@@ -180,8 +187,10 @@ npm run preview
 - **📘 TypeScript** - Type-safe development
 - **🎨 Tailwind CSS** - Utility-first styling
 - **🧩 Radix UI** - Accessible component library
+- **📊 Recharts** - Data visualization and charts
 - **⚡ Vite** - Fast development and build tool
-- **🎭 Framer Motion** - Smooth animations and transitions
+- **🗣️ Web Speech API** - Text-to-speech functionality
+- **🔊 Audio API** - Sound effects and audio feedback
 
 ## 🌟 Highlights
 
@@ -192,19 +201,21 @@ npm run preview
 - **Sound Effects**: Audio feedback for process events
 
 ### **📈 Comparison Tools**
-- **Side-by-side Analysis**: Compare multiple algorithms with complexity charts
-- **Complexity Breakdowns**: Detailed Big O notation analysis
-- **Visual Insights**: Color-coded complexity comparisons
-- **Interactive Info Modals**: Click for detailed algorithm explanations
-- **Data Structure Showcase**: See queues, heaps, and arrays in action
+- **Side-by-side Analysis**: Compare multiple algorithms with performance charts
+- **Performance Breakdowns**: Detailed metrics analysis with visual charts
+- **Interactive Info Modals**: Click for detailed algorithm explanations with voice narration
+- **Queue Visualization**: See FIFO queues, priority queues, and circular queues in action
+- **Voice Narration**: Natural voice explanation of comparison results and recommendations
+- **Export Options**: Save results for further analysis
 
 ### **🎯 Educational Value**
-- **Interactive Learning**: Hands-on exploration of DSA concepts
+- **Interactive Learning**: Hands-on exploration of CPU scheduling concepts
 - **Visual Understanding**: See abstract algorithms in action
+- **Audio Learning**: Listen to natural voice explanations of complex concepts
 - **Experimentation**: Try different scenarios and parameters
-- **Complexity Analysis**: Understand Big O notation through examples
-- **Algorithm Selection**: Learn when to use which data structure
-- **Performance Trade-offs**: Compare efficiency vs simplicity
+- **Performance Analysis**: Understand algorithm trade-offs and efficiency
+- **OS Concepts**: Learn about process scheduling, queues, and system performance
+- **Real-world Applications**: Understand how operating systems manage CPU resources
 
 <div align="center">
 

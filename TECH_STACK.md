@@ -17,6 +17,7 @@
 - **Sonner 1.7.4** - Toast notifications
 - **React Router DOM 6.30.1** - Client-side routing
 - **React Query 5.83.0** - State management
+- **Web Speech API** - Text-to-speech functionality
 
 ### Development Tools
 - **ESLint 9.32.0** - Code linting
@@ -42,6 +43,7 @@ src/
 │   └── ComplexityInfoModal.tsx # Complexity analysis
 ├── hooks/
 │   ├── useSoundEffects.ts     # Audio management
+│   ├── useTextToSpeech.ts     # Text-to-speech functionality
 │   └── use-toast.ts           # Notifications
 ├── types/
 │   └── scheduler.ts           # TypeScript interfaces
@@ -131,7 +133,8 @@ npm run lint     # Code linting
 - **Interactive Gantt Charts**: Timeline visualization of process execution
 - **Queue Animation**: Watch processes move through scheduling queues
 - **Performance Analysis**: Waiting time, turnaround time, response time
-- **Algorithm Comparison**: Side-by-side performance metrics
+- **Algorithm Comparison**: Side-by-side performance metrics with charts
+- **Text-to-Speech**: Natural voice narration of algorithm information and comparisons
 - **CSV Import**: Bulk process data upload
 - **Sound Effects**: Audio feedback for process events
 - **Modern UI**: Glassmorphism design with smooth animations

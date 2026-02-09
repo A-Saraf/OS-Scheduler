@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { AlgorithmComparison } from '@/types/scheduler';
+import { Volume2 } from 'lucide-react';
 
 interface ComparisonModalProps {
   isOpen: boolean;
@@ -10,6 +11,9 @@ interface ComparisonModalProps {
 }
 
 const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose, data }) => {
+  const [isSpeaking, setIsSpeaking] = React.useState(false);
+  
+  if (!isOpen) return null;
   if (!data || data.length === 0) return null;
 
   const chartData = data.map(d => ({
@@ -29,13 +33,125 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose, data
     total: '#f472b6',
   };
 
+  const speakComparison = () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    if (!('speechSynthesis' in window)) {
+      alert('Text-to-speech is not supported in your browser');
+      return;
+    }
+
+    setIsSpeaking(true);
+
+    // Find best performers
+    const bestWaiting = data.reduce((a, b) => a.avgWaitingTime < b.avgWaitingTime ? a : b);
+    const bestTurnaround = data.reduce((a, b) => a.avgTurnaroundTime < b.avgTurnaroundTime ? a : b);
+    const bestResponse = data.reduce((a, b) => a.avgResponseTime < b.avgResponseTime ? a : b);
+    const bestCPU = data.reduce((a, b) => a.cpuUtilization > b.cpuUtilization ? a : b);
+
+    // Create concise, significant speech text
+    let speechText = `Algorithm comparison results. `;
+    speechText += `Best waiting time: ${bestWaiting.algorithm} at ${bestWaiting.avgWaitingTime.toFixed(1)} milliseconds. `;
+    speechText += `Best turnaround time: ${bestTurnaround.algorithm} at ${bestTurnaround.avgTurnaroundTime.toFixed(1)} milliseconds. `;
+    speechText += `Best response time: ${bestResponse.algorithm} at ${bestResponse.avgResponseTime.toFixed(1)} milliseconds. `;
+    speechText += `Highest CPU utilization: ${bestCPU.algorithm} at ${bestCPU.cpuUtilization.toFixed(1)} percent. `;
+    
+    // Add key recommendation
+    speechText += `For minimal waiting time, choose ${bestWaiting.algorithm}. For best overall performance, consider ${bestTurnaround.algorithm}.`;
+
+    const utterance = new SpeechSynthesisUtterance(speechText);
+    utterance.rate = 1.1; // Natural speaking rate
+    utterance.pitch = 0.95; // Slightly lower pitch for more natural sound
+    utterance.volume = 0.85;
+    
+    // Add pauses for more natural speech rhythm
+    const sentences = speechText.split('. ');
+    let enhancedText = '';
+    sentences.forEach((sentence, index) => {
+      if (sentence.trim()) {
+        enhancedText += sentence.trim() + '. ';
+        // Add pause after each sentence except the last
+        if (index < sentences.length - 2) {
+          enhancedText += ' ';
+        }
+      }
+    });
+    
+    // Update utterance with enhanced text
+    utterance.text = enhancedText;
+    
+    // Try to select the most natural, humanized voice
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Priority order for most natural voices
+    const naturalVoices = [
+      // Google voices (usually very natural)
+      ...voices.filter(v => v.name.includes('Google') && v.lang.includes('en')),
+      // Microsoft high-quality voices
+      ...voices.filter(v => v.name.includes('Microsoft') && (
+        v.name.includes('Zira') || v.name.includes('David') || 
+        v.name.includes('Mark') || v.name.includes('Hazel')
+      )),
+      // macOS natural voices
+      ...voices.filter(v => v.name.includes('Samantha') || v.name.includes('Karen')),
+      // Amazon Polly-like voices if available
+      ...voices.filter(v => v.name.includes('Joanna') || v.name.includes('Matthew') || v.name.includes('Kendra')),
+      // Other high-quality voices
+      ...voices.filter(v => v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Susan')),
+      // Neural voices if available
+      ...voices.filter(v => v.name.includes('Neural') || v.name.includes('Premium')),
+      // Any English voice with "Natural" in name
+      ...voices.filter(v => v.name.includes('Natural') && v.lang.includes('en')),
+      // Fallback to any English voice
+      ...voices.filter(v => v.lang.includes('en'))
+    ];
+    
+    // Remove duplicates and get the best available voice
+    const uniqueVoices = [...new Map(naturalVoices.map(v => [v.name, v])).values()];
+    const preferredVoice = uniqueVoices[0];
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+      console.log('Using voice:', preferredVoice.name, preferredVoice.lang);
+    } else {
+      console.log('Using default voice');
+    }
+    
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+    
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-[hsl(222,47%,5%)] to-[hsl(217,33%,10%)] border-[rgba(255,255,255,0.1)]">
+      <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-5xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 max-h-[90vh] overflow-y-auto glass-card border-[rgba(255,255,255,0.1)]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold gradient-text">
-            Algorithm Comparison Analysis
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl font-bold gradient-text">
+              Algorithm Comparison Analysis
+            </DialogTitle>
+            <button
+              onClick={speakComparison}
+              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 ${
+                isSpeaking 
+                  ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30' 
+                  : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30'
+              }`}
+              title={isSpeaking ? "Stop speaking" : "Speak analysis"}
+            >
+              <Volume2 size={18} />
+            </button>
+          </div>
           <div className="modal-divider mt-4" />
         </DialogHeader>
 
@@ -143,7 +259,6 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose, data
               </BarChart>
             </ResponsiveContainer>
           </div>
-
           {/* Summary Table */}
           <div className="glass-card overflow-x-auto">
             <h3 className="text-lg font-semibold text-foreground mb-4">Detailed Metrics</h3>
