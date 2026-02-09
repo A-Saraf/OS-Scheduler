@@ -83,36 +83,12 @@ const CPUScheduler: React.FC = () => {
   };
 
   // Add process
-  const handleAddProcess = useCallback(() => {
-    if (!processId.trim()) {
-      toast.error('Please provide a Process ID');
-      return;
-    }
-    if (processes.some(p => p.id === processId.trim())) {
-      toast.error('Process ID already exists');
-      return;
-    }
-    if (burstTime <= 0) {
-      toast.error('Burst Time must be at least 1');
-      return;
-    }
-
+  const handleAddProcess = useCallback((process: Omit<Process, 'color'>) => {
+    // Form already handles validation, just add the process
+    setProcesses(prev => [...prev, process]);
     playSound('addProcess');
-
-    setProcesses(prev => [...prev, {
-      id: processId.trim(),
-      arrival: arrivalTime,
-      burst: burstTime,
-      priority: priority,
-    }]);
-
-    setProcessId('');
-    setArrivalTime(0);
-    setBurstTime(1);
-    setPriority(1);
-
-    toast.success(`Process ${processId} added`);
-  }, [processId, arrivalTime, burstTime, priority, processes, playSound]);
+    toast.success(`Process ${process.id} added`);
+  }, [playSound]);
 
   // Delete process
   const handleDeleteProcess = useCallback((id: string) => {
@@ -316,6 +292,7 @@ const CPUScheduler: React.FC = () => {
               {activeTab === 'manual' ? (
                 <ProcessInputForm
                   algorithm={algorithm}
+                  existingProcesses={processes}
                   onAddProcess={handleAddProcess}
                   onRandomize={handleRandomize}
                   onLoadScenario={handleLoadScenario}

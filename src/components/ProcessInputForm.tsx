@@ -16,13 +16,15 @@ interface ProcessInputFormProps {
     onAddProcess: (process: Omit<Process, 'color'>) => void;
     onRandomize: () => void;
     onLoadScenario: (scenario: Scenario) => void;
+    existingProcesses?: Process[]; // Add existing processes for duplicate check
 }
 
 const ProcessInputForm: React.FC<ProcessInputFormProps> = ({
     algorithm,
     onAddProcess,
     onRandomize,
-    onLoadScenario
+    onLoadScenario,
+    existingProcesses = []
 }) => {
     const [processId, setProcessId] = useState('');
     const [arrivalTime, setArrivalTime] = useState(0);
@@ -35,8 +37,15 @@ const ProcessInputForm: React.FC<ProcessInputFormProps> = ({
     // For better UX, let's just leave it empty or use a placeholder.
 
     const handleSubmit = () => {
-        if (!processId.trim()) {
+        const trimmedId = processId.trim();
+        
+        if (!trimmedId) {
             toast.error('Process ID is required');
+            return;
+        }
+
+        if (existingProcesses.some(p => p.id === trimmedId)) {
+            toast.error('Process ID already exists');
             return;
         }
 
@@ -46,17 +55,19 @@ const ProcessInputForm: React.FC<ProcessInputFormProps> = ({
         }
 
         onAddProcess({
-            id: processId,
+            id: trimmedId,
             arrival: arrivalTime,
             burst: burstTime,
             priority: priority,
         });
 
-        // Reset fields
-        setProcessId('');
-        setBurstTime(Math.floor(Math.random() * 10) + 1);
-        setArrivalTime(0);
-        setPriority(1);
+        // Reset fields after successful addition
+        setTimeout(() => {
+            setProcessId('');
+            setBurstTime(Math.floor(Math.random() * 10) + 1);
+            setArrivalTime(0);
+            setPriority(1);
+        }, 100); // Small delay to ensure the parent processes the addition first
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
